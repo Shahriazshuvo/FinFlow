@@ -1,0 +1,2 @@
+# FinFlow
+expense tracking app
