@@ -21,10 +21,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
     val javaVersion = JavaVersion.toVersion(libs.version("javaToolchain"))
 
-    // AGP 9 platforms carry a minor version (the installed SDK is `android-37.0`), so the
-    // minor has to be set too or the platform hash resolves to a non-existent `android-37`.
     commonExtension.compileSdk = libs.intVersion("compileSdk")
-    commonExtension.compileSdkMinor = libs.intVersion("compileSdkMinor")
 
     commonExtension.defaultConfig.apply {
         minSdk = libs.intVersion("minSdk")

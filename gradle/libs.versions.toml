@@ -1,25 +1,24 @@
 [versions]
 # Build toolchain
-agp = "9.1.0"
+agp = "9.0.1"
 kotlin = "2.3.21"
 ksp = "2.3.11"
 javaToolchain = "17"
-compileSdk = "37"
-compileSdkMinor = "0"
+compileSdk = "36"
 minSdk = "24"
 targetSdk = "36"
 
 # AndroidX core
-coreKtx = "1.19.0"
-lifecycle = "2.11.0"
+coreKtx = "1.18.0"          # 1.19.0 requires compileSdk 37
+lifecycle = "2.9.4"         # 2.11.0 viewmodel-compose requires compileSdk 37
 activityCompose = "1.13.0"
-composeBom = "2026.08.00"
-navigation = "2.10.0"
+composeBom = "2025.12.01"   # Compose 1.10.0; 2026.08.00 is Compose 1.12 (compileSdk 37)
+navigation = "2.9.8"        # 2.10.0 requires compileSdk 37
 paging = "3.5.1"
 
 # DI
 hilt = "2.60.1"
-androidxHilt = "1.4.0"
+androidxHilt = "1.3.0"      # 1.4.0 navigation-compose requires compileSdk 37
 
 # Persistence
 room = "2.8.4"
