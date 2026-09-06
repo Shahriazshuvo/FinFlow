@@ -1,15 +1,28 @@
 *.iml
 .gradle
-/local.properties
+.kotlin
+
+# Build output for every module (unanchored, so core/*/build and feature/*/build
+# are covered without a per-module .gitignore).
+build/
+/captures
+.externalNativeBuild
+.cxx
+
+# Local machine configuration and secrets.
+local.properties
+secrets.properties
+*.jks
+*.keystore
+
+# IDE
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/deploymentTargetDropDown.xml
+
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.FinFlow" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Pre-Compose window theme. The app's real theming is FinFlowTheme in
+         core:designsystem; this only controls the window before Compose draws. -->
+    <style name="Theme.FinFlow" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/finflow_window_background</item>
+    </style>
 </resources>
