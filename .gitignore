@@ -12,6 +12,7 @@ build/
 # Local machine configuration and secrets.
 local.properties
 secrets.properties
+skills-lock.json
 *.jks
 *.keystore
 

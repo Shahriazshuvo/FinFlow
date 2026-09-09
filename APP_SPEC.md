@@ -122,10 +122,12 @@ FinFlow/
 ├── core/
 │   ├── common/
 │   ├── designsystem/
+│   ├── ui/
 │   ├── model/
 │   ├── database/
 │   ├── network/
 │   ├── domain/
+│   ├── data/
 │   ├── datastore/
 │   └── sync/
 ├── feature/
@@ -144,11 +146,13 @@ Module responsibilities:
 - `app`: App entry point, navigation host, root DI setup, app theme.
 - `core:common`: Shared non-UI functionality such as result wrappers, dispatchers, date utilities, validation helpers, currency formatting, error mapping, and small pure Kotlin extensions.
 - `core:designsystem`: Shared UI system such as theme, typography, colors, spacing, icons, reusable Compose widgets, screen scaffolds, empty states, loading states, buttons, text fields, cards, dialogs, and bottom sheets.
+- `core:ui`: The `MviViewModel` base class, the `UiState`/`UiIntent`/`UiEffect` contract interfaces, and effect-collection helpers shared by every feature.
 - `core:model`: Domain models shared across features.
 - `core:database`: Room database, entities, DAOs, local data sources.
 - `core:network`: Supabase client, DTOs, remote data sources.
 - `core:domain`: Repository interfaces and use cases.
-- `core:datastore`: User preferences and local app settings.
+- `core:data`: Offline-first repository implementations and the sync engine that reconciles Room with Supabase.
+- `core:datastore`: User preferences, local app settings, and sync watermarks.
 - `core:sync`: WorkManager workers and sync orchestration.
 - `feature:*`: Feature UI, route, MVI contract, ViewModel, UI mappers, and feature-specific components only.
 - `build-logic`: Gradle convention plugins for consistent module setup.
@@ -503,7 +507,7 @@ Important MVI tests:
 Phase 1: Foundation
 
 - Create Android project
-- Add `SPEC.md`
+- Add `APP_SPEC.md`
 - Configure Gradle convention plugins
 - Create modules
 - Add app theme and design system foundation
@@ -563,19 +567,21 @@ Phase 8: Polish
 
 ## 23. AI-Native Development Workflow
 
-Use AI as a coding partner, but keep `SPEC.md` as the source of truth.
+Use AI as a coding partner, but keep `APP_SPEC.md` as the source of truth.
 
-Rules for AI-assisted development:
+**This section is now enforced by structure rather than by remembering to say it.** The rules that
+used to live here are loaded automatically:
 
-- Give AI one feature or module at a time.
-- Always include current module structure.
-- Ask AI to follow MVI contracts.
-- Ask AI to avoid direct UI-to-data-layer dependencies.
-- Ask AI to reuse components from `core:designsystem`.
-- Ask AI to move repeated widgets into `core:designsystem` instead of duplicating UI.
-- Ask AI to place shared pure Kotlin helpers in `core:common`.
-- Ask AI to write tests for important state transitions.
-- Ask AI to explain assumptions before large architecture changes.
+- `CLAUDE.md` at the repo root — the module graph, the hard invariants, and the toolchain
+  constraints, loaded into every session.
+- `feature/CLAUDE.md`, `core/data/CLAUDE.md`, `core/database/CLAUDE.md`,
+  `core/designsystem/CLAUDE.md` — loaded when the agent touches that subtree.
+- `.agents/skills/finflow-*` — task-triggered playbooks for building a feature module, working with
+  design tokens, changing the sync engine, and migrating Room schemas.
+- `docs/architecture/spec-map.md` — lets an agent load one section of this file instead of all of it.
+
+Two rules remain human-side and cannot be automated:
+
 - Review generated code before committing.
 - Keep commits small and meaningful.
 
@@ -603,135 +609,19 @@ docs: update README with screenshots and architecture
 
 ## 24. AI Prompts
 
-### Prompt 1: Project Setup
+The six canned prompts that used to live here ("You are a senior Android engineer…") have been
+replaced by skills, which trigger on the task instead of waiting to be pasted:
 
-```text
-You are a senior Android engineer. I am building FinFlow, a production-grade offline-first finance app.
+| Was | Now |
+|---|---|
+| Prompt 1: Project Setup | `CLAUDE.md` (loaded every session) |
+| Prompt 2: MVI Feature Implementation | `.agents/skills/finflow-feature-module/` |
+| Prompt 3: Repository Layer | `.agents/skills/finflow-offline-sync/` |
+| Prompt 4: Offline Sync | `.agents/skills/finflow-offline-sync/` |
+| Prompt 5: Supabase Integration | `.agents/skills/supabase/` + `docs/supabase/README.md` |
+| Prompt 6: Code Review | §25 below, checked by `scripts/check-context.sh` |
 
-Architecture:
-- Kotlin
-- Jetpack Compose
-- Material 3
-- Clean Architecture
-- MVI
-- Multi-module
-- Hilt
-- Room
-- Supabase
-- WorkManager
-- Coroutines + Flow
-
-Create the initial Android project structure and Gradle module plan.
-
-Requirements:
-- Use the SPEC.md as the source of truth.
-- Create modules: app, core:common, core:designsystem, core:model, core:database, core:network, core:domain, core:datastore, core:sync, feature:auth, feature:dashboard, feature:transactions, feature:budgets, feature:goals, feature:analytics, feature:settings.
-- Use Gradle convention plugins if possible.
-- Keep dependencies scoped to the correct modules.
-- Put reusable Compose widgets in core:designsystem.
-- Put shared pure Kotlin functionality in core:common.
-- Do not duplicate widget designs across feature modules.
-- Do not implement feature UI yet.
-- Explain each module responsibility.
-```
-
-### Prompt 2: MVI Feature Implementation
-
-```text
-You are a senior Android engineer. Implement the [FEATURE_NAME] feature for FinFlow using Clean Architecture + MVI.
-
-Rules:
-- UI renders immutable State.
-- UI sends Intent to ViewModel.
-- ViewModel emits one-time Effect for navigation/snackbar.
-- ViewModel calls use cases only.
-- UI must not call repositories, Room, or Supabase directly.
-- Reuse existing widgets from core:designsystem.
-- Do not recreate shared buttons, text fields, cards, loading states, empty states, error states, dialogs, or bottom sheets inside this feature.
-- If a repeated widget is missing, create it in core:designsystem first.
-- Follow existing module/package conventions.
-- Add focused ViewModel tests for intent -> state/effect behavior.
-
-Create:
-- [Feature]Contract.kt
-- [Feature]Route.kt
-- [Feature]Screen.kt
-- [Feature]ViewModel.kt
-- [Feature]UiMapper.kt if needed
-- navigation entry if needed
-- tests for the ViewModel
-```
-
-### Prompt 3: Repository Layer
-
-```text
-You are a senior Android engineer. Implement the repository layer for [ENTITY_NAME] in FinFlow.
-
-Architecture rules:
-- Repository interface belongs in core:domain.
-- Repository implementation belongs in the data-facing module already used by the project.
-- Room is the source of truth.
-- Supabase is remote persistence.
-- Reads should return Flow from Room.
-- Writes should update Room first and mark local rows with SyncStatus.
-- Do not expose Room entities or Supabase DTOs to domain or UI.
-- Add tests with fake local and remote data sources.
-```
-
-### Prompt 4: Offline Sync
-
-```text
-You are a senior Android engineer. Implement offline-first sync for FinFlow.
-
-Requirements:
-- Use WorkManager.
-- Push pending local changes to Supabase.
-- Pull remote changes from Supabase.
-- Use updated_at and deleted_at for conflict handling.
-- Keep sync status local-only.
-- Retry safely when network fails.
-- Do not block UI on remote sync.
-- Add logs/error handling suitable for debugging.
-- Add tests for pending create, pending update, pending delete, failed sync, and successful sync.
-```
-
-### Prompt 5: Supabase Integration
-
-```text
-You are a senior Android engineer. Add Supabase integration to FinFlow.
-
-Requirements:
-- Use Supabase Auth for email/password signup, login, logout, and session restore.
-- Use the publishable key only.
-- Load Supabase URL and key from local.properties/BuildConfig.
-- Do not hardcode secrets.
-- Keep DTOs in the network layer.
-- Map DTOs to domain/local models through mappers.
-- Surface user-friendly domain errors.
-```
-
-### Prompt 6: Code Review
-
-```text
-Review this FinFlow Android change as a senior Android engineer.
-
-Focus on:
-- Clean Architecture boundaries
-- MVI correctness
-- Compose state handling
-- Reusable UI usage from core:designsystem
-- Duplicate widget/design code inside feature modules
-- Shared helper placement in core:common
-- Offline-first behavior
-- Room/Supabase separation
-- Hilt dependency graph
-- Error handling
-- Test coverage
-- Security issues
-- Any direct UI dependency on data-layer implementation
-
-Return findings ordered by severity with file/line references.
-```
+See `docs/README.md` for the full map of what is loaded when.
 
 ## 25. Definition of Done
 
