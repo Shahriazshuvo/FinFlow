@@ -3,8 +3,12 @@ package com.finflow.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -16,6 +20,7 @@ import com.finflow.core.designsystem.component.FinFlowBottomBar
 import com.finflow.core.designsystem.component.FinFlowBottomBarItem
 import com.finflow.navigation.FinFlowNavHost
 import com.finflow.navigation.TopLevelDestination
+import kotlinx.coroutines.launch
 
 @Composable
 fun FinFlowApp(
@@ -28,8 +33,12 @@ fun FinFlowApp(
     val currentTopLevel = TopLevelDestination.entries
         .firstOrNull { destination -> currentDestination.matches(destination) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentTopLevel != null) {
                 FinFlowBottomBar(
@@ -45,6 +54,9 @@ fun FinFlowApp(
         FinFlowNavHost(
             navController = navController,
             isAuthenticated = isAuthenticated,
+            onMessage = { message ->
+                scope.launch { snackbarHostState.showSnackbar(message) }
+            },
             modifier = Modifier.padding(innerPadding),
         )
     }

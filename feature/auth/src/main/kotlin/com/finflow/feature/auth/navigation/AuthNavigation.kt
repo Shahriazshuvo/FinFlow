@@ -14,8 +14,14 @@ data object AuthRouteKey
 fun NavController.navigateToAuth(navOptions: NavOptions? = null) =
     navigate(AuthRouteKey, navOptions)
 
-fun NavGraphBuilder.authScreen() {
+fun NavGraphBuilder.authScreen(
+    onSignedIn: () -> Unit,
+    onMessage: (String) -> Unit,
+) {
     composable<AuthRouteKey> {
-        AuthRoute()
+        AuthRoute(
+            onSignedIn = onSignedIn,
+            onMessage = onMessage,
+        )
     }
 }

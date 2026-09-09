@@ -165,7 +165,9 @@ Each feature should follow this structure:
 feature/transactions/
 └── src/main/kotlin/.../transactions/
     ├── presentation/
-    │   ├── TransactionsContract.kt
+    │   ├── TransactionsState.kt
+    │   ├── TransactionsIntent.kt
+    │   ├── TransactionsEffect.kt
     │   ├── TransactionsRoute.kt
     │   ├── TransactionsScreen.kt
     │   ├── TransactionsViewModel.kt
@@ -174,6 +176,9 @@ feature/transactions/
     └── navigation/
         └── TransactionsNavigation.kt
 ```
+
+One top-level class per file: `State`, `Intent` and `Effect` each get their own file rather
+than a combined `XContract.kt`. `feature:auth` is the reference implementation.
 
 Naming convention:
 

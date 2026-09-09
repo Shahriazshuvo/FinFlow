@@ -3,16 +3,19 @@
 Covers all seven feature modules; they are identical in shape. Playbook with worked templates:
 skill `finflow-mvi-feature`. Spec: `APP_SPEC.md` §6 and §8.
 
-**All seven are stubs today** — `Route`, `Screen`, `Navigation` only. There is no `Contract` or
-`ViewModel` anywhere in the repo yet, so the first one you write sets the house style for the
-other six. Follow this file exactly rather than inventing a pattern.
+**`feature:auth` is built and is the reference implementation** — copy its shape. The other six
+are still stubs (`Route`, `Screen`, `Navigation` only).
 
 ## File layout
+
+One top-level class per file.
 
 ```
 feature/goals/src/main/kotlin/com/finflow/feature/goals/
 ├── presentation/
-│   ├── GoalsContract.kt      GoalsState / GoalsIntent / GoalsEffect
+│   ├── GoalsState.kt         data class, implements UiState
+│   ├── GoalsIntent.kt        sealed interface, implements UiIntent
+│   ├── GoalsEffect.kt        sealed interface, implements UiEffect
 │   ├── GoalsViewModel.kt     @HiltViewModel, extends MviViewModel
 │   ├── GoalsUiMapper.kt      domain model → UI model
 │   ├── GoalsRoute.kt         stateful: hiltViewModel, state collection, effects
@@ -27,6 +30,9 @@ feature/goals/src/main/kotlin/com/finflow/feature/goals/
 `XState` is an immutable data class implementing `UiState` — loading, data, empty, form fields,
 validation errors, selected filters, dialog visibility. `XIntent` and `XEffect` are sealed
 interfaces. Navigation, snackbars and share actions are **effects, not state**.
+
+Derived values belong on the state as computed properties (`AuthState.canSubmit`), not as stored
+fields the reducer has to remember to keep in step.
 
 `XViewModel : MviViewModel<XState, XIntent, XEffect>` gets state, intent and effect plumbing for
 free — `onIntent`, `setState`, `sendEffect`, `currentState`. `handleIntent` is an exhaustive
