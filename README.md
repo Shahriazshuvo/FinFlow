@@ -67,14 +67,20 @@ Amounts are integer minor units (`Money` in `core:model`) everywhere locally, an
 
    Only the publishable/anon key belongs in the app. Row Level Security is the security
    boundary. A clone with no credentials still builds.
-3. `./gradlew :app:assembleDebug`
+   Suffix a key with `_DEV`, `_QA` or `_PROD` to point one environment at its own project.
+3. `./gradlew :app:assembleDevDebug`
 
 Requires JDK 17.
 
 ## Build and test
 
+Builds are flavored `dev` / `qa` / `prod` across `debug` / `release`. `dev` and `qa` install
+alongside `prod`.
+
 ```bash
-./gradlew :app:assembleDebug   # whole module graph
-./gradlew test                 # JVM unit tests
-./gradlew testDebugUnitTest    # Android unit tests
+./gradlew :app:assembleDevDebug    # whole module graph
+./gradlew :app:assembleProdRelease # release build
+./gradlew test                     # JVM unit tests
+./gradlew testDevDebugUnitTest     # Android unit tests
+bash scripts/check-context.sh      # documentation invariants
 ```

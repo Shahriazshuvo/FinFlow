@@ -2,11 +2,12 @@ package com.finflow.navigation
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.finflow.core.designsystem.icon.FinFlowIcons
-import com.finflow.feature.analytics.navigation.AnalyticsRouteKey
-import com.finflow.feature.budgets.navigation.BudgetsRouteKey
-import com.finflow.feature.dashboard.navigation.DashboardRouteKey
-import com.finflow.feature.settings.navigation.SettingsRouteKey
-import com.finflow.feature.transactions.navigation.TransactionsRouteKey
+import com.finflow.core.navigation.AccountsRouteKey
+import com.finflow.core.navigation.AnalyticsRouteKey
+import com.finflow.core.navigation.BudgetsRouteKey
+import com.finflow.core.navigation.DashboardRouteKey
+import com.finflow.core.navigation.SettingsRouteKey
+import com.finflow.core.navigation.TransactionsRouteKey
 import kotlin.reflect.KClass
 
 /**
@@ -30,6 +31,12 @@ enum class TopLevelDestination(
         icon = FinFlowIcons.Transactions,
         route = TransactionsRouteKey,
         routeClass = TransactionsRouteKey::class,
+    ),
+    ACCOUNTS(
+        label = "Accounts",
+        icon = FinFlowIcons.Account,
+        route = AccountsRouteKey,
+        routeClass = AccountsRouteKey::class,
     ),
     BUDGETS(
         label = "Budgets",

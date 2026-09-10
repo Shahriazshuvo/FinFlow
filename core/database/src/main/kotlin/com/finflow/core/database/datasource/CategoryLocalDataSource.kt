@@ -28,6 +28,14 @@ class CategoryLocalDataSource @Inject constructor(
 
     suspend fun countFor(userId: String): Int = dao.countFor(userId)
 
+    /** True when another live category of the same type already uses [name]. */
+    suspend fun hasNameConflict(
+        userId: String,
+        type: TransactionType,
+        name: String,
+        excludingId: String?,
+    ): Boolean = dao.findConflictingId(userId, type, name, excludingId) != null
+
     suspend fun upsert(category: Category, now: Instant) {
         val previous = dao.getById(category.id)?.sync
         dao.upsert(category.toEntity(localUpdatedAt = now, previous = previous))

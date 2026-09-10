@@ -1,645 +1,775 @@
-# FinFlow Specification
+# FinFlow App Architecture Proposal
 
-## 1. Project Summary
+## 1. Architecture Goal
 
-FinFlow is a production-grade Android personal finance app built to demonstrate senior-level Android engineering. The app helps users track income, expenses, budgets, saving goals, and analytics with offline-first data handling.
+FinFlow should use a practical production Android architecture inspired by Now in Android, adapted for a fintech app.
 
-The project uses Kotlin, Jetpack Compose, Material 3, Clean Architecture, MVI, Room, Supabase, WorkManager, Coroutines, Flow, Hilt, and automated testing.
+The architecture should be:
 
-## 2. Product Goals
+- Modular
+- Offline-capable
+- Secure by design
+- Testable
+- Portfolio-ready
+- Easy to extend with AI later
 
-- Track income and expenses by account and category.
-- Support offline-first transaction management.
-- Sync local financial data with Supabase.
-- Show dashboard summaries and analytics.
-- Support monthly budgets and saving goals.
-- Demonstrate production-grade Android architecture.
-- Keep user data isolated through Supabase Row Level Security.
-- Maintain a professional GitHub repository with documentation, tests, screenshots, and a clear demo.
-
-## 3. Non-Goals
-
-- No bank account integration in the MVP.
-- No payment processing.
-- No investment trading features.
-- No financial advice or prediction as a core feature.
-- No service-role key or secret key inside the Android app.
-- No direct UI dependency on Supabase or Room.
-
-## 4. Target Tech Stack
-
-- Language: Kotlin
-- UI: Jetpack Compose
-- Design: Material 3
-- Architecture: Clean Architecture + MVI
-- Dependency Injection: Hilt
-- Local Database: Room
-- Remote Backend: Supabase
-- Remote Database: PostgreSQL
-- Authentication: Supabase Auth
-- Async: Coroutines + Flow
-- Background Sync: WorkManager
-- Serialization: Kotlin Serialization
-- Paging: Paging 3, if transaction list becomes large
-- Testing: JUnit, Turbine, MockK, Room tests, Compose UI tests
-- Static Analysis: Detekt + Ktlint
-
-## 5. Architecture
-
-FinFlow follows Clean Architecture with MVI, multi-module boundaries, and offline-first synchronization.
-
-Layer flow:
+The core idea:
 
 ```text
-Compose UI
-  -> sends Intent
-ViewModel
-  -> executes UseCase
-UseCase
-  -> calls Repository Interface
-Repository Implementation
-  -> coordinates Room LocalDataSource and Supabase RemoteDataSource
-Room
-  -> emits Flow back to UI as source of truth
+app = application shell
+feature:* = screens and presentation logic
+core:domain = use cases and repository contracts
+core:data = repository implementations and sync coordination
+core:database = Room local source of truth
+core:network = Supabase remote data source
+core:sync = WorkManager background sync
+core:security = encrypted session and secure storage
 ```
 
-Core rules:
+FinFlow should not use feature-local data/domain layers by default. Shared business logic belongs in `core:domain`; shared data access belongs in `core:data`.
 
-- Compose screens render immutable `UiState`.
-- User actions are represented as `Intent`.
-- ViewModels process intents and update state.
-- One-time events use `Effect`.
-- UI never talks directly to Room.
-- UI never talks directly to Supabase.
-- ViewModel never depends on DTOs, Room entities, or Supabase implementation details.
-- Domain models stay independent from framework-specific data classes.
-- Room is the source of truth for financial data.
-- Supabase is used for auth and remote persistence.
-- WorkManager handles retryable background sync.
+---
 
-## 6. MVI Contract Pattern
-
-Each feature uses this contract shape:
-
-```kotlin
-data class FeatureState(
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null
-)
-
-sealed interface FeatureIntent {
-    data object Load : FeatureIntent
-}
-
-sealed interface FeatureEffect {
-    data class ShowSnackbar(val message: String) : FeatureEffect
-}
-```
-
-State should contain:
-
-- Loading state
-- Screen data
-- Empty state
-- Form fields
-- Validation errors
-- Selected filters
-- Dialog or bottom sheet visibility
-
-Effect should contain:
-
-- Navigation
-- Snackbar messages
-- Toast-like one-time messages
-- Export/share actions
-- Permission request events
-
-## 7. Module Structure
+## 2. Recommended Module Structure
 
 ```text
 FinFlow/
 ├── app/
-├── core/
-│   ├── common/
-│   ├── designsystem/
+│   ├── MainActivity
+│   ├── FinFlowApplication
 │   ├── ui/
-│   ├── model/
-│   ├── database/
-│   ├── network/
-│   ├── domain/
-│   ├── data/
-│   ├── datastore/
-│   └── sync/
+│   └── navigation/
+│
 ├── feature/
 │   ├── auth/
 │   ├── dashboard/
+│   ├── accounts/
 │   ├── transactions/
+│   ├── categories/
 │   ├── budgets/
 │   ├── goals/
 │   ├── analytics/
 │   └── settings/
+│
+├── core/
+│   ├── model/
+│   ├── common/
+│   ├── domain/
+│   ├── data/
+│   ├── database/
+│   ├── network/
+│   ├── datastore/
+│   ├── security/
+│   ├── sync/
+│   ├── navigation/
+│   ├── designsystem/
+│   ├── ui/
+│   └── testing/
+│
 └── build-logic/
 ```
 
-Module responsibilities:
+This is close to Now in Android, but FinFlow needs stronger `security`, `sync`, and money-handling boundaries.
 
-- `app`: App entry point, navigation host, root DI setup, app theme.
-- `core:common`: Shared non-UI functionality such as result wrappers, dispatchers, date utilities, validation helpers, currency formatting, error mapping, and small pure Kotlin extensions.
-- `core:designsystem`: Shared UI system such as theme, typography, colors, spacing, icons, reusable Compose widgets, screen scaffolds, empty states, loading states, buttons, text fields, cards, dialogs, and bottom sheets.
-- `core:ui`: The `MviViewModel` base class, the `UiState`/`UiIntent`/`UiEffect` contract interfaces, and effect-collection helpers shared by every feature.
-- `core:model`: Domain models shared across features.
-- `core:database`: Room database, entities, DAOs, local data sources.
-- `core:network`: Supabase client, DTOs, remote data sources.
-- `core:domain`: Repository interfaces and use cases.
-- `core:data`: Offline-first repository implementations and the sync engine that reconciles Room with Supabase.
-- `core:datastore`: User preferences, local app settings, and sync watermarks.
-- `core:sync`: WorkManager workers and sync orchestration.
-- `feature:*`: Feature UI, route, MVI contract, ViewModel, UI mappers, and feature-specific components only.
-- `build-logic`: Gradle convention plugins for consistent module setup.
+---
 
-## 8. Feature Module Structure
+## 3. Dependency Rules
 
-Each feature should follow this structure:
+Allowed dependencies:
+
+```text
+app
+ ↓
+feature:*
+ ↓
+core:domain
+core:model
+core:common
+core:ui
+core:designsystem
+core:navigation
+```
+
+Data-side dependencies:
+
+```text
+core:data
+ ↓
+core:domain
+core:database
+core:network
+core:datastore
+core:common
+core:model
+
+core:sync
+ ↓
+core:data
+core:datastore
+core:common
+```
+
+Feature modules must not depend on:
+
+```text
+core:data
+core:database
+core:network
+core:sync
+```
+
+This makes architecture violations compile-time visible. ViewModels call use cases only.
+
+---
+
+## 4. Feature Module Shape
+
+Each feature should be presentation-focused:
 
 ```text
 feature/transactions/
-└── src/main/kotlin/.../transactions/
-    ├── presentation/
-    │   ├── TransactionsState.kt
-    │   ├── TransactionsIntent.kt
-    │   ├── TransactionsEffect.kt
-    │   ├── TransactionsRoute.kt
-    │   ├── TransactionsScreen.kt
-    │   ├── TransactionsViewModel.kt
-    │   ├── TransactionsUiMapper.kt
-    │   └── components/
-    └── navigation/
-        └── TransactionsNavigation.kt
+├── navigation/
+│   └── TransactionsNavigation.kt
+└── presentation/
+    ├── TransactionsRoute.kt
+    ├── TransactionsScreen.kt
+    ├── TransactionsViewModel.kt
+    ├── TransactionsState.kt
+    ├── TransactionsIntent.kt
+    ├── TransactionsEffect.kt
+    ├── TransactionsUiMapper.kt
+    └── components/
 ```
 
-One top-level class per file: `State`, `Intent` and `Effect` each get their own file rather
-than a combined `XContract.kt`. `feature:auth` is the reference implementation.
+Use the same shape for accounts, budgets, goals, analytics, dashboard, categories, auth, and settings.
 
-Naming convention:
+Do not create `data/` and `domain/` folders inside every feature unless a feature has genuinely private business logic. For this app, centralized `core:domain` and `core:data` are cleaner.
 
-- `AuthState`, `AuthIntent`, `AuthEffect`
-- `DashboardState`, `DashboardIntent`, `DashboardEffect`
-- `TransactionsState`, `TransactionsIntent`, `TransactionsEffect`
-- `BudgetsState`, `BudgetsIntent`, `BudgetsEffect`
-- `GoalsState`, `GoalsIntent`, `GoalsEffect`
-- `AnalyticsState`, `AnalyticsIntent`, `AnalyticsEffect`
-- `SettingsState`, `SettingsIntent`, `SettingsEffect`
+---
 
-## 9. Reusable UI and Common Functionality
+## 5. App Shell
 
-FinFlow must avoid duplicate widget design. Shared widgets and repeated UI patterns belong in `core:designsystem`, not inside individual feature modules.
+The `app` module owns:
 
-Reusable UI belongs in `core:designsystem` when:
+- `MainActivity`
+- `FinFlowApplication`
+- Root theme setup
+- Auth-aware routing
+- Main bottom navigation
+- Top-level navigation graph
+- App-wide snackbar host
+- Sync startup wiring
 
-- The same visual pattern appears in two or more features.
-- The component represents app-wide design language.
-- The component handles common loading, empty, error, dialog, sheet, form, or list behavior.
-- The component should look consistent across dashboard, transactions, budgets, goals, analytics, and settings.
+The app module may depend on every feature module so it can register navigation destinations.
 
-Feature-local UI belongs in `feature:*` only when:
+---
 
-- The component is specific to one feature.
-- The component depends on one feature's `State`, `Intent`, or UI model.
-- Reusing it elsewhere would create coupling or unclear naming.
+## 6. Navigation
 
-Recommended `core:designsystem` structure:
+Use Navigation Compose.
+
+Recommended root graph:
 
 ```text
-core/designsystem/
-└── src/main/kotlin/.../designsystem/
-    ├── theme/
-    │   ├── Color.kt
-    │   ├── Theme.kt
-    │   ├── Type.kt
-    │   └── Spacing.kt
-    ├── component/
-    │   ├── FinFlowButton.kt
-    │   ├── FinFlowOutlinedButton.kt
-    │   ├── FinFlowTextField.kt
-    │   ├── FinFlowPasswordField.kt
-    │   ├── FinFlowTopAppBar.kt
-    │   ├── FinFlowBottomBar.kt
-    │   ├── FinFlowCard.kt
-    │   ├── AmountCard.kt
-    │   ├── ProgressCard.kt
-    │   ├── EmptyState.kt
-    │   ├── ErrorState.kt
-    │   ├── LoadingState.kt
-    │   ├── ConfirmDialog.kt
-    │   ├── SelectionSheet.kt
-    │   └── SyncStatusChip.kt
-    └── icon/
-        └── FinFlowIcons.kt
+Root
+├── AuthGraph
+│   ├── Login
+│   └── Signup
+└── MainGraph
+    ├── Dashboard
+    ├── Transactions
+    ├── Accounts
+    ├── Budgets
+    ├── Goals
+    ├── Analytics
+    └── Settings
 ```
 
-Recommended `core:common` structure:
+Navigation rules:
 
-```text
-core/common/
-└── src/main/kotlin/.../common/
-    ├── result/
-    │   └── AppResult.kt
-    ├── error/
-    │   └── AppError.kt
-    ├── dispatcher/
-    │   └── DispatcherProvider.kt
-    ├── formatter/
-    │   ├── CurrencyFormatter.kt
-    │   └── DateFormatter.kt
-    ├── validation/
-    │   ├── AmountValidator.kt
-    │   └── AuthValidator.kt
-    └── extension/
-        └── FlowExtensions.kt
-```
-
-Reusable UI rules:
-
-- Do not recreate the same button, text field, card, top bar, empty state, loading state, error state, dialog, or bottom sheet style in feature modules.
-- Feature screens should compose reusable design system components.
-- Design system components must be stateless where possible.
-- Design system components should accept values and callbacks, not ViewModels.
-- Design system components must not depend on feature modules.
-- Design system components must not depend on Room, Supabase, repositories, or use cases.
-- If a feature component becomes useful in another feature, move it to `core:designsystem` and rename it generically.
+- App owns root graph composition.
+- Features expose route registration functions.
+- Pass IDs, not domain objects.
+- Use typed route objects where practical.
+- Auth state decides whether root starts in Auth or Main.
 
 Example:
 
-```kotlin
-@Composable
-fun AmountCard(
-    title: String,
-    amount: String,
-    modifier: Modifier = Modifier,
-    trendLabel: String? = null,
-    isPositive: Boolean? = null
-)
+```text
+transactions/{transactionId}
+accounts/{accountId}
+budgets/{budgetId}
+goals/{goalId}
 ```
 
-Usage:
+---
 
-```kotlin
-AmountCard(
-    title = "This Month Expense",
-    amount = state.monthlyExpense
-)
+## 7. UDF / MVI Pattern
+
+Each screen follows predictable unidirectional data flow:
+
+```text
+User action
+ → Intent
+ → ViewModel
+ → UseCase
+ → Repository
+ → StateFlow update
+ → Compose UI
 ```
 
-## 10. Backend Tables
-
-Supabase tables:
-
-- `profiles`
-- `accounts`
-- `categories`
-- `transactions`
-- `budgets`
-- `goals`
-
-Analytics is derived from transaction, budget, category, and goal data. Separate analytics tables are not required for the MVP.
-
-## 11. Domain Models
-
-Main domain models:
-
-- `Profile`
-- `Account`
-- `Category`
-- `Transaction`
-- `Budget`
-- `Goal`
-- `MonthlySummary`
-- `CategorySpending`
-- `BudgetUsage`
-
-Each local entity should include sync metadata:
+Recommended contracts:
 
 ```kotlin
-enum class SyncStatus {
-    SYNCED,
-    PENDING_CREATE,
-    PENDING_UPDATE,
-    PENDING_DELETE
+data class TransactionsState(
+    val isLoading: Boolean = false,
+    val transactions: List<TransactionUiModel> = emptyList(),
+    val error: UiMessage? = null,
+)
+
+sealed interface TransactionsIntent {
+    data object Refresh : TransactionsIntent
+    data class Delete(val id: String) : TransactionsIntent
+    data class SearchChanged(val query: String) : TransactionsIntent
+}
+
+sealed interface TransactionsEffect {
+    data class ShowSnackbar(val message: String) : TransactionsEffect
+    data class NavigateToDetail(val transactionId: String) : TransactionsEffect
 }
 ```
 
-Local-only sync fields:
+State is durable UI state. Effects are one-time events such as snackbar and navigation.
 
-- `syncStatus`
-- `lastSyncedAt`
-- `remoteUpdatedAt`
-- `localUpdatedAt`
+---
 
-## 12. Offline-First Strategy
+## 8. Data Architecture
 
-Read flow:
+Use Room as the local source of truth.
 
 ```text
-Screen opens
--> ViewModel sends Load intent
--> UseCase observes Repository
--> Repository returns Flow from Room
--> UI renders Room data
--> Sync pulls latest Supabase data
--> Room updates
--> UI updates automatically
+Compose UI
+ → ViewModel
+ → UseCase
+ → Repository interface
+ → Repository implementation
+ → Room
+ → Flow
+ → UI
 ```
 
-Write flow:
+Network sync is background work:
 
 ```text
-User creates/updates/deletes data
--> ViewModel sends Intent
--> UseCase validates request
--> Repository writes to Room first
--> Row is marked pending
--> UI updates immediately
--> WorkManager syncs pending changes to Supabase
--> On success, local row is marked synced
--> On failure, pending row remains and retry is scheduled
+Repository write
+ → Room row marked pending
+ → Sync requested
+ → WorkManager pushes to Supabase
+ → Row marked synced
 ```
 
-Delete strategy:
+Rules:
 
-- Use soft delete with `deleted_at`.
-- Local delete should mark `PENDING_DELETE`.
-- Remote sync should update `deleted_at` in Supabase.
-- Hard delete can be deferred or avoided for portfolio MVP.
+- Reads come from Room.
+- Writes land in Room first.
+- Supabase is remote source of truth.
+- WorkManager handles push/pull sync.
+- Repositories hide local/remote implementation details.
+- UI never sees Room entities or Supabase DTOs.
 
-## 13. Authentication
+---
 
-MVP auth:
+## 9. Supabase Mapping
 
-- Email/password signup
-- Email/password login
-- Logout
-- Session restore
-- Authenticated-only app area
+Use the existing Supabase schema as backend truth.
 
-Later auth:
+| Table/View | Feature | Android Model Strategy |
+|---|---|---|
+| `profiles` | auth/settings | Profile domain model, created by signup trigger |
+| `accounts` | accounts/dashboard | Account plus calculated balance |
+| `categories` | categories/transactions/budgets | Category domain model |
+| `transactions` | transactions/dashboard/analytics | Transaction ledger model |
+| `budgets` | budgets/dashboard | Budget domain model |
+| `goals` | goals/dashboard | Goal domain model |
+| `monthly_income_expense` | analytics/dashboard | Analytics read model |
+| `monthly_category_spending` | analytics | Category spending read model |
+| `budget_usage` | budgets/analytics/dashboard | Budget usage read model |
 
-- Password reset
-- Biometric app unlock
-- OAuth provider login
+Do not invent backend fields. Do not create profile/default data after signup; the database trigger handles it.
 
-Security rules:
+---
 
-- Use Supabase publishable key in Android.
-- Never use service-role key in Android.
-- Store Supabase URL/key through `local.properties` or build config.
-- Do not commit real keys to GitHub.
+## 10. Money Handling
 
-## 14. Dashboard
+Domain code must never use floating point money.
 
-Dashboard should show:
+Recommended local/domain representation:
 
-- Current month income
-- Current month expense
-- Net amount
-- Account balance summary
+```text
+Money(minorUnits: Long)
+```
+
+Postgres currently uses:
+
+```text
+numeric(12,2)
+```
+
+That is acceptable, but conversion must be explicit at the network boundary.
+
+Rules:
+
+- UI text input parses to `Money`.
+- Domain uses `Money`.
+- Room stores integer minor units.
+- Supabase DTO maps `numeric(12,2)` to/from `Money`.
+- Formatting belongs in `core:common`.
+
+---
+
+## 11. Account Balance
+
+The backend does not define `current_balance`. Do not add it to Android models as stored truth.
+
+Balance should be calculated:
+
+```text
+current balance =
+opening_balance
++ income transactions
+- expense transactions
+```
+
+Only include transactions where:
+
+```text
+deleted_at is null
+```
+
+Expose this as a read model:
+
+```kotlin
+data class AccountWithBalance(
+    val account: Account,
+    val balance: Money,
+)
+```
+
+The calculation can live in a Room DAO query/local data source and be exposed through `AccountRepository`.
+
+---
+
+## 12. Sync Strategy
+
+Use simple offline-first sync, not a complex distributed sync engine.
+
+Recommended algorithm:
+
+```text
+1. Push pending local changes.
+2. Pull remote rows where updated_at > lastSyncedAt.
+3. Apply remote rows unless the local row is still pending.
+4. Respect deleted_at tombstones.
+5. Update sync watermark.
+```
+
+Pending statuses:
+
+```text
+SYNCED
+PENDING_CREATE
+PENDING_UPDATE
+PENDING_DELETE
+```
+
+Conflict policy:
+
+```text
+Local pending changes win until successfully pushed.
+Remote changes apply when local row has no pending write.
+```
+
+This is simple, understandable, and good enough for a portfolio-grade personal finance app.
+
+---
+
+## 13. Feature Architecture
+
+### Auth
+
+Flow:
+
+```text
+Login/Signup Screen
+ → AuthViewModel
+ → AuthUseCase
+ → AuthRepository
+ → Supabase Auth
+ → encrypted session storage
+```
+
+Signup must not create profile, account, or default categories manually. Supabase trigger does that.
+
+After signup:
+
+```text
+Signup success
+ → restore session
+ → trigger initial sync
+ → navigate to Main
+```
+
+### Dashboard
+
+Dashboard is orchestration only.
+
+It combines:
+
+- Total balance
+- Monthly income
+- Monthly expense
 - Recent transactions
-- Budget usage warning
-- Goal progress summary
-- Sync status indicator
-
-## 15. Transactions
-
-User can:
-
-- View transaction list
-- Add income or expense
-- Edit transaction
-- Soft delete transaction
-- Filter by type, category, account, and date range
-- Search by note
-- See pending sync status when offline
-
-Transaction list should read from Room. Supabase updates should arrive through sync and update Room.
-
-## 16. Budgets
-
-User can:
-
-- Create monthly category budget
-- Edit budget amount
-- Delete budget
-- See spent amount
-- See remaining amount
-- See usage percentage
-
-Budget usage is calculated from expense transactions for the selected month.
-
-## 17. Goals
-
-User can:
-
-- Create saving goal
-- Set target amount
-- Set current amount
-- Set optional target date
-- Update progress
-- Delete goal
-
-Goal progress should be displayed as percentage and remaining amount.
-
-## 18. Analytics
-
-Analytics screen should include:
-
-- Monthly income vs expense
-- Category-wise spending breakdown
 - Budget usage
-- Net savings trend
-- Top spending categories
-
-MVP analytics can be calculated locally from Room queries. Supabase analytics views can be used later as an optimization or comparison point.
-
-## 19. Settings
-
-Settings should include:
-
-- Profile name
-- Currency code
-- Theme preference
-- Sync now action
-- Logout
-- App version
-
-## 20. Error Handling
-
-Use a domain-level error model:
-
-```kotlin
-sealed interface AppError {
-    data object NetworkUnavailable : AppError
-    data object Unauthorized : AppError
-    data class Validation(val message: String) : AppError
-    data class Unknown(val message: String?) : AppError
-}
-```
-
-Error handling rules:
-
-- Convert Supabase/network exceptions inside data layer.
-- Expose domain errors to use cases/ViewModels.
-- Show user-friendly messages in UI.
-- Keep retryable sync failures in local sync state.
-
-## 21. Testing Strategy
-
-Minimum tests:
-
-- Use case unit tests
-- ViewModel MVI intent/state/effect tests
-- Repository tests with fake local and remote data sources
-- Room DAO tests
-- Sync worker tests
-- Compose UI tests for critical screens
-
-Important MVI tests:
-
-- Given initial state, when intent is sent, then expected state is emitted.
-- Given use case failure, when intent is sent, then error effect is emitted.
-- Given offline write, when transaction is created, then pending state is stored.
-
-## 22. Development Phases
-
-Phase 1: Foundation
-
-- Create Android project
-- Add `APP_SPEC.md`
-- Configure Gradle convention plugins
-- Create modules
-- Add app theme and design system foundation
-
-Phase 2: Core Data
-
-- Add domain models
-- Add Room entities and DAOs
-- Add Supabase client setup
-- Add repository contracts
-- Add local-first repository implementations
-
-Phase 3: Auth
-
-- Implement signup
-- Implement login
-- Implement session restore
-- Implement logout
-- Protect authenticated routes
-
-Phase 4: Transactions
-
-- Transaction list
-- Add/edit transaction
-- Soft delete
-- Search and filters
-- Local pending sync status
-
-Phase 5: Sync
-
-- Push pending local changes
-- Pull remote changes
-- Resolve basic conflicts using `updated_at`
-- Add manual sync and background sync
-
-Phase 6: Dashboard, Budgets, Goals
-
-- Dashboard summary
-- Monthly budgets
 - Goal progress
-- Empty/loading/error states
 
-Phase 7: Analytics
+Do not create a giant `DashboardRepository` with duplicated logic. Prefer a dashboard use case that combines existing use cases.
 
-- Income vs expense
-- Category spending
-- Budget usage
-- Net savings trend
+### Accounts
 
-Phase 8: Polish
+Responsibilities:
 
-- Tests
-- README
-- Screenshots
-- Demo video
-- GitHub release
+- List accounts
+- Add account
+- Edit account
+- Soft-delete account
+- Account detail
+- Calculated balance
 
-## 23. AI-Native Development Workflow
-
-Use AI as a coding partner, but keep `APP_SPEC.md` as the source of truth.
-
-**This section is now enforced by structure rather than by remembering to say it.** The rules that
-used to live here are loaded automatically:
-
-- `CLAUDE.md` at the repo root — the module graph, the hard invariants, and the toolchain
-  constraints, loaded into every session.
-- `feature/CLAUDE.md`, `core/data/CLAUDE.md`, `core/database/CLAUDE.md`,
-  `core/designsystem/CLAUDE.md` — loaded when the agent touches that subtree.
-- `.agents/skills/finflow-*` — task-triggered playbooks for building a feature module, working with
-  design tokens, changing the sync engine, and migrating Room schemas.
-- `docs/architecture/spec-map.md` — lets an agent load one section of this file instead of all of it.
-
-Two rules remain human-side and cannot be automated:
-
-- Review generated code before committing.
-- Keep commits small and meaningful.
-
-Recommended commit order:
+Types:
 
 ```text
-docs: add FinFlow product and architecture specification
-chore: initialize Android project
-chore: configure Gradle convention plugins
-chore: add core and feature modules
-feat: add design system foundation
-feat: add domain models
-feat: add Room database foundation
-feat: add Supabase client setup
-feat: implement auth with MVI
-feat: implement transactions with offline-first storage
-feat: add background sync worker
-feat: add dashboard summary
-feat: add budgets
-feat: add goals
-feat: add analytics
-test: add ViewModel and repository tests
-docs: update README with screenshots and architecture
+cash
+bank
+card
+wallet
 ```
 
-## 24. AI Prompts
+### Transactions
 
-The six canned prompts that used to live here ("You are a senior Android engineer…") have been
-replaced by skills, which trigger on the task instead of waiting to be pasted:
+Primary ledger feature.
 
-| Was | Now |
-|---|---|
-| Prompt 1: Project Setup | `CLAUDE.md` (loaded every session) |
-| Prompt 2: MVI Feature Implementation | `.agents/skills/finflow-feature-module/` |
-| Prompt 3: Repository Layer | `.agents/skills/finflow-offline-sync/` |
-| Prompt 4: Offline Sync | `.agents/skills/finflow-offline-sync/` |
-| Prompt 5: Supabase Integration | `.agents/skills/supabase/` + `docs/supabase/README.md` |
-| Prompt 6: Code Review | §25 below, checked by `scripts/check-context.sh` |
+Responsibilities:
 
-See `docs/README.md` for the full map of what is loaded when.
+- List transactions
+- Add transaction
+- Edit transaction
+- Soft-delete transaction
+- Filter by account/category/type/date/query
 
-## 25. Definition of Done
+Transactions must validate:
 
-The project is portfolio-ready when:
+- Amount > 0
+- Account exists
+- Category exists
+- Category type matches transaction type when possible
 
-- App builds successfully.
-- Core features work offline.
-- Shared UI components are reused from `core:designsystem`.
-- Common non-UI helpers are reused from `core:common`.
-- Feature modules do not duplicate app-wide widget designs.
-- Sync retries safely after network failure.
-- Supabase RLS prevents cross-user data access.
-- MVI state/effect behavior is tested.
-- README includes architecture, setup, screenshots, and demo.
-- Codebase has meaningful commit history.
-- No secrets are committed.
+### Categories
+
+Responsibilities:
+
+- Income/expense category list
+- Create category
+- Edit category
+- Soft-delete category
+
+Duplicate names should map to user-friendly UI errors.
+
+### Budgets
+
+Responsibilities:
+
+- Budget list
+- Create/edit budget
+- Budget progress
+- Remaining amount
+- Usage percent
+
+The uniqueness rule is:
+
+```text
+user_id + category_id + month
+```
+
+Duplicate budget errors should be represented clearly in the UI.
+
+### Goals
+
+Current schema approach:
+
+```text
+Update goals.current_amount directly.
+```
+
+Do not invent contribution history in Android.
+
+Optional backend change later:
+
+```text
+goal_contributions table
+```
+
+Add it only if the product needs contribution history/auditability.
+
+### Analytics
+
+Use backend views:
+
+```text
+monthly_income_expense
+monthly_category_spending
+budget_usage
+```
+
+Android should not duplicate these aggregations unless offline analytics is explicitly needed.
+
+---
+
+## 14. Security Architecture
+
+Security boundary:
+
+```text
+Supabase Auth + PostgreSQL RLS
+```
+
+Android-side `userId` filters are for correctness and cache separation, not security.
+
+Rules:
+
+- Never ship Supabase service-role key.
+- Only use anon/publishable key.
+- Store sessions securely.
+- Use Android Keystore-backed encrypted storage where appropriate.
+- Keep RLS enabled on every user-owned table.
+- Treat RLS failures as authorization/session errors.
+- Clear local cached user data on logout.
+
+---
+
+## 15. Error Handling
+
+Use shared error types in `core:common`.
+
+Recommended categories:
+
+```text
+Unauthorized
+Network
+Offline
+Validation
+Duplicate
+NotFound
+Database
+Unknown
+```
+
+Repositories should map raw Supabase/Room exceptions into domain-safe errors. UI should receive user-friendly messages through UI mappers.
+
+Examples:
+
+```text
+category duplicate index → "Category already exists."
+budget duplicate index → "Budget already exists for this month."
+RLS denied → "You do not have permission or your session expired."
+network unavailable → "You're offline. Changes will sync later."
+```
+
+---
+
+## 16. DataStore
+
+Use DataStore for lightweight app preferences only:
+
+- Theme
+- Currency display preference
+- Onboarding completion
+- Last selected filters
+- Sync watermarks if not stored in Room
+
+Do not store relational finance data in DataStore.
+
+---
+
+## 17. Design System
+
+Use `core:designsystem` for:
+
+- Theme
+- Colors
+- Typography
+- Shapes
+- Spacing
+- Buttons
+- Text fields
+- App bars
+- Cards
+- Dialogs
+- Loading states
+- Empty states
+- Error states
+- Financial amount display
+- Progress components
+
+Use `core:ui` for:
+
+- MVI base helpers
+- Effect collection
+- UI error message mapping
+- Shared Compose utilities
+
+Keep feature-specific components inside feature modules until reused by multiple features.
+
+---
+
+## 18. Testing Strategy
+
+### Unit Tests
+
+Test:
+
+- Use cases
+- Validators
+- Money conversion
+- Mappers
+- Repository logic
+- Sync algorithm
+
+### Flow Tests
+
+Use Turbine for:
+
+- ViewModel state
+- Repository flows
+- Sync status flows
+
+### Compose UI Tests
+
+Test:
+
+- Login
+- Signup
+- Transaction list
+- Add transaction
+- Account list
+- Budget progress
+- Goal progress
+- Analytics empty/loading/success states
+
+### Integration Tests
+
+Use fake local/remote data sources for most tests.
+
+Run limited Supabase integration tests for:
+
+- Auth
+- RLS
+- Duplicate constraints
+- Analytics views
+- Signup trigger
+
+---
+
+## 19. Build Variants
+
+Support:
+
+```text
+dev
+qa
+prod
+```
+
+Each environment should have:
+
+- Different application ID suffix for dev/qa
+- Separate Supabase URL/key if needed
+- Debug logging enabled only for debug/dev
+- Release minification eventually enabled
+
+Never include service-role secrets in any variant.
+
+---
+
+## 20. Future AI Architecture
+
+Add later:
+
+```text
+feature:ai
+```
+
+AI should not query Room or Supabase directly.
+
+Flow:
+
+```text
+AI screen
+ → AiViewModel
+ → AskFinancialQuestionUseCase
+ → FinancialContextBuilder
+ → existing finance use cases
+ → prompt/context
+ → LLM provider
+ → structured insight
+ → UI
+```
+
+Example questions:
+
+- How much did I spend on food this month?
+- Why did expenses increase?
+- Am I over budget?
+- What were my biggest expenses?
+- How much did I save compared with last month?
+
+Keep AI behind domain abstractions so providers can change later.
+
+---
+
+## 21. Architectural Decisions
+
+| Decision | Choice | Reason |
+|---|---|---|
+| UI | Jetpack Compose | Modern Android UI |
+| Architecture | Now in Android-style modular architecture | Scales without overcomplicating |
+| Feature modules | Presentation-focused | Prevents duplicated domain/data layers |
+| Domain | Central `core:domain` | Shared use cases and contracts |
+| Data | Central `core:data` | Repository implementations and sync coordination |
+| Local DB | Room | Local source of truth |
+| Backend | Supabase | Auth, Postgres, RLS, analytics views |
+| State | UDF/MVI | Predictable screen behavior |
+| DI | Hilt | Standard Android dependency injection |
+| Sync | WorkManager | Reliable background sync |
+| Money | Integer minor units locally | Avoids floating point errors |
+| Preferences | DataStore | Lightweight settings |
+| Security | Supabase Auth + RLS + encrypted session | Appropriate fintech baseline |
+| Testing | JUnit, MockK, Turbine, Compose tests | Good coverage for layers |
+| AI readiness | Future `feature:ai` through use cases | Adds AI without leaking data layers |
+
+---
+
+## 22. Final Recommendation
+
+FinFlow should use:
+
+```text
+Now in Android modular style
++ Clean Architecture boundaries
++ Room-first offline source of truth
++ Supabase-backed sync
++ feature-owned presentation
++ core-owned domain/data
++ strong security and money handling
+```
+
+This is the best fit for a real-world fintech portfolio app: serious, maintainable, testable, and scalable without unnecessary enterprise complexity.

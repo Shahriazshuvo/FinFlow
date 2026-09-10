@@ -13,8 +13,15 @@ interface Synchronizer {
 /**
  * Implemented by every repository that owns a synced table. Returns `true` when the table
  * reached a consistent state, `false` when the worker should retry.
+ *
+ * [table] is not decoration: implementations are contributed `@IntoSet` from nine different
+ * feature modules, and a Dagger set has no defined iteration order. The worker sorts on it
+ * so a pulled transaction can never land before the account it points at. [SyncTable]'s
+ * declaration order is therefore the single declaration of pull order.
  */
 interface Syncable {
+    val table: SyncTable
+
     suspend fun syncWith(synchronizer: Synchronizer): Boolean
 }
 

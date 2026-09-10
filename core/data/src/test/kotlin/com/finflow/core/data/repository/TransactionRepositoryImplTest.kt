@@ -15,6 +15,9 @@ import com.finflow.core.model.TransactionDraft
 import com.finflow.core.model.TransactionType
 import com.finflow.core.network.datasource.TransactionRemoteDataSource
 import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.testing.TEST_CLOCK
+import com.finflow.core.testing.TEST_INSTANT
+import com.finflow.core.testing.TEST_USER_ID
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,7 +49,7 @@ class TransactionRepositoryImplTest {
     private val currentUser = mockk<CurrentUserProvider>()
     private val syncTrigger = mockk<SyncTrigger>(relaxed = true)
     private val synchronizer = mockk<Synchronizer>(relaxed = true)
-    private val clock = Clock.fixed(NOW, ZoneOffset.UTC)
+    private val clock = TEST_CLOCK
 
     private lateinit var repository: TransactionRepositoryImpl
 
@@ -193,9 +196,9 @@ class TransactionRepositoryImplTest {
     )
 
     private companion object {
-        val NOW: Instant = Instant.parse("2026-09-03T10:00:00Z")
+        val NOW: Instant = TEST_INSTANT
         val CREATED_AT: Instant = Instant.parse("2026-09-01T08:00:00Z")
-        const val USER_ID = "user-1"
+        const val USER_ID = TEST_USER_ID
         const val ACCOUNT_ID = "account-1"
         const val CATEGORY_ID = "category-1"
         const val EXISTING_ID = "transaction-1"

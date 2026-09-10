@@ -58,6 +58,13 @@ internal class BudgetRepositoryImpl @Inject constructor(
         val now = clock.instant()
         val existing = draft.id?.let { local.getById(it) }
 
+        // `budgets_user_category_month_unique_idx` allows one budget per category per
+        // month. Room's `@Upsert` would replace the existing row instead of failing, which
+        // would look like a successful create and silently discard the earlier amount.
+        if (local.hasMonthConflict(userId, draft.categoryId, draft.month, existing?.id)) {
+            return AppResult.Failure(AppError.Conflict(field = "category"))
+        }
+
         val budget = Budget(
             id = existing?.id ?: draft.id ?: UUID.randomUUID().toString(),
             userId = userId,
@@ -88,6 +95,9 @@ internal class BudgetRepositoryImpl @Inject constructor(
         }
         return AppResult.Success(Unit)
     }
+
+    /** Pull order is imposed on this, not on Dagger's set iteration. */
+    override val table: SyncTable = SyncTable.BUDGETS
 
     override suspend fun syncWith(synchronizer: Synchronizer): Boolean {
         val userId = currentUser.userIdOrNull() ?: return false

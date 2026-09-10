@@ -70,7 +70,7 @@ for path in Path("feature").rglob("*.kt"):
         if BANNED.match(line.strip()):
             offenders.append(f"{path}:{n}: {line.strip()}")
 if offenders:
-    fail(CHECK, "features may only see designsystem/ui/common/model/domain:\n      "
+    fail(CHECK, "features may only see designsystem/ui/navigation/common/model/domain:\n      "
                 + "\n      ".join(offenders))
 else:
     ok(CHECK)
@@ -161,9 +161,12 @@ if db.exists():
             ok(CHECK)
 
 # ----------------------------------------------------------- 8. skills
+SKILL_ROOTS = [Path(".claude/skills"), Path(".agents/skills")]
+skill_files = [s for root in SKILL_ROOTS if root.exists() for s in root.glob("*/SKILL.md")]
+
 CHECK = "every SKILL.md has frontmatter whose name matches its directory"
 offenders = []
-for skill in Path(".claude/skills").glob("*/SKILL.md") if Path(".claude/skills").exists() else []:
+for skill in skill_files:
     head = skill.read_text().split("\n")[:12]
     name = next((l.split(":", 1)[1].strip() for l in head if l.startswith("name:")), None)
     desc = any(l.startswith("description:") for l in head)
@@ -175,6 +178,26 @@ for skill in Path(".claude/skills").glob("*/SKILL.md") if Path(".claude/skills")
         offenders.append(f"{skill}: no `description:` — skill will never trigger")
 if offenders:
     fail(CHECK, "\n      ".join(offenders))
+else:
+    ok(CHECK)
+
+# --------------------------------------------------- 9. skill routes
+# CLAUDE.md routes work by naming a skill. A route to a skill that was never written is a
+# dead end the reader only discovers after following it, and check 6 does not catch it
+# because a skill name is not a path.
+CHECK = "every skill named by the context layer exists"
+available = {s.parent.name for s in skill_files}
+SKILL_RE = re.compile(r"skills?\s+`([a-z0-9-]+)`")
+offenders = []
+for cf in context_files:
+    if not cf.exists():
+        continue
+    for n, line in enumerate(cf.read_text().split("\n"), 1):
+        for ref in SKILL_RE.findall(line):
+            if ref not in available:
+                offenders.append(f"{cf}:{n}: routes to skill `{ref}`, which does not exist")
+if offenders:
+    fail(CHECK, "write the skill or drop the route:\n      " + "\n      ".join(offenders))
 else:
     ok(CHECK)
 

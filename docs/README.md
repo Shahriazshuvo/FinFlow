@@ -10,7 +10,7 @@ Nothing here is loaded automatically. Read a file when you need it.
 | File | What it holds |
 |---|---|
 | `docs/architecture/spec-map.md` | Section map of `APP_SPEC.md` — find a line range, read only that |
-| `docs/architecture/module-graph.md` | The 18 modules, the allowed dependency edges, and where each wall is enforced |
+| `docs/architecture/module-graph.md` | The 20 modules, the allowed dependency edges, and where each wall is enforced |
 
 ## Backend
 
@@ -31,6 +31,7 @@ seen the reasoning.
 | `docs/adr/0003-pure-jvm-domain-modules.md` | `core:model`/`common`/`domain` keep Android off the classpath |
 | `docs/adr/0004-convention-plugins-enforce-layering.md` | Layering is a compile error, not a review convention |
 | `docs/adr/0005-context-layer-structure.md` | Why the agent context is tiered the way it is |
+| `docs/adr/0006-centralized-data-layer.md` | The data layer is centralized; features hold presentation only |
 
 New ADRs: copy `docs/adr/_template.md`, take the next number, never renumber an existing one.
 

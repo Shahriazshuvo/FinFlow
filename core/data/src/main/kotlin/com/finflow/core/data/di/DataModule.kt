@@ -8,6 +8,7 @@ import com.finflow.core.data.repository.CategoryRepositoryImpl
 import com.finflow.core.data.repository.GoalRepositoryImpl
 import com.finflow.core.data.repository.ProfileRepositoryImpl
 import com.finflow.core.data.repository.TransactionRepositoryImpl
+import com.finflow.core.data.repository.UserPreferencesRepositoryImpl
 import com.finflow.core.data.sync.PendingChangesMonitor
 import com.finflow.core.data.sync.RoomPendingChangesMonitor
 import com.finflow.core.data.sync.Syncable
@@ -19,13 +20,22 @@ import com.finflow.core.domain.repository.CategoryRepository
 import com.finflow.core.domain.repository.GoalRepository
 import com.finflow.core.domain.repository.ProfileRepository
 import com.finflow.core.domain.repository.TransactionRepository
+import com.finflow.core.domain.repository.UserPreferencesRepository
 import dagger.Binds
 import dagger.Module
-import dagger.multibindings.IntoSet
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 
+/**
+ * Every repository binding in the app (APP_SPEC.md §26).
+ *
+ * These live here rather than in the feature that shows the data, because data is not
+ * UI-scoped: accounts are read by the accounts screen, the dashboard and the transaction
+ * form. A feature that owned its own repository would become a dependency of every screen
+ * that reads it — see `docs/adr/0006-centralized-data-layer.md`.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class DataModule {
@@ -64,15 +74,24 @@ internal abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindUserPreferencesRepository(
+        impl: UserPreferencesRepositoryImpl,
+    ): UserPreferencesRepository
+
+    @Binds
+    @Singleton
     abstract fun bindPendingChangesMonitor(
         impl: RoomPendingChangesMonitor,
     ): PendingChangesMonitor
 }
 
 /**
- * The set the sync worker iterates over. Order matters: profile, then accounts and
- * categories, then the rows that reference them — so a pulled transaction never lands
- * before the account it points at.
+ * The set the sync worker iterates over.
+ *
+ * Dagger defines no iteration order for a multibinding, so ordering is not left to this
+ * file: every [Syncable] declares its `table`, and `SyncWorker` sorts on `SyncTable`'s
+ * ordinal — profile, then accounts and categories, then the rows that reference them — so
+ * a pulled transaction never lands before the account it points at.
  */
 @Module
 @InstallIn(SingletonComponent::class)

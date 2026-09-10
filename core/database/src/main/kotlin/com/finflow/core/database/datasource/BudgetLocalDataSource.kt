@@ -54,6 +54,14 @@ class BudgetLocalDataSource @Inject constructor(
 
     suspend fun getById(id: String): Budget? = dao.getById(id)?.toDomain()
 
+    /** True when this category already has a budget for [month]. */
+    suspend fun hasMonthConflict(
+        userId: String,
+        categoryId: String,
+        month: YearMonth,
+        excludingId: String?,
+    ): Boolean = dao.findConflictingId(userId, categoryId, month, excludingId) != null
+
     suspend fun upsert(budget: Budget, now: Instant) {
         val previous = dao.getById(budget.id)?.sync
         dao.upsert(budget.toEntity(localUpdatedAt = now, previous = previous))

@@ -50,11 +50,19 @@ internal class CategoryRepositoryImpl @Inject constructor(
             ?: return AppResult.Failure(AppError.Unauthorized)
         val now = clock.instant()
         val existing = draft.id?.let { local.getById(it) }
+        val name = draft.name.trim()
+
+        // Checked here rather than left to Postgres: an offline create has to be rejected
+        // at the form, not silently accepted and then bounced hours later by the unique
+        // index during sync.
+        if (local.hasNameConflict(userId, draft.type, name, existing?.id)) {
+            return AppResult.Failure(AppError.Conflict(field = "name"))
+        }
 
         val category = Category(
             id = existing?.id ?: draft.id ?: UUID.randomUUID().toString(),
             userId = userId,
-            name = draft.name.trim(),
+            name = name,
             type = draft.type,
             color = draft.color,
             icon = draft.icon,
@@ -82,6 +90,9 @@ internal class CategoryRepositoryImpl @Inject constructor(
         }
         return AppResult.Success(Unit)
     }
+
+    /** Pull order is imposed on this, not on Dagger's set iteration. */
+    override val table: SyncTable = SyncTable.CATEGORIES
 
     override suspend fun syncWith(synchronizer: Synchronizer): Boolean {
         val userId = currentUser.userIdOrNull() ?: return false

@@ -66,6 +66,9 @@ internal class ProfileRepositoryImpl @Inject constructor(
      * use [com.finflow.core.data.sync.TableSyncRunner]: push any local edit, then take the
      * server's copy.
      */
+    /** Pull order is imposed on this, not on Dagger's set iteration. */
+    override val table: SyncTable = SyncTable.PROFILES
+
     override suspend fun syncWith(synchronizer: Synchronizer): Boolean {
         val userId = currentUser.userIdOrNull() ?: return false
         val result = runCatchingApp(errorMapper::map) {

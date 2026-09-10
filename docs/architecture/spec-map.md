@@ -7,7 +7,7 @@ only its line range:
 sed -n '329,364p' APP_SPEC.md    # §12, Offline-First Strategy
 ```
 
-The spec's section numbers are **frozen** — 9 sections are cited by number from KDoc in
+The spec's section numbers are **frozen** — 13 sections are cited by number from KDoc in
 the source (see the last column), so renumbering would orphan those references. Add new sections at
 the end; never renumber existing ones.
 
@@ -20,9 +20,9 @@ The Summary column is hand-written and preserved across regenerations; every oth
 | §2 | Product Goals | 9–19 | The eight things the product must do. | — |
 | §3 | Non-Goals | 20–28 | Explicitly out of scope — read before proposing a feature. | — |
 | §4 | Target Tech Stack | 29–46 | Library-by-library technology choices. | — |
-| §5 | Architecture | 47–79 | **The layering contract.** Layer flow diagram + the ten core rules. | `AndroidFeatureConventionPlugin.kt`, `Dtos.kt`, `EntityMappers.kt`, `FinFlowDatabase.kt` |
+| §5 | Architecture | 47–79 | **The layering contract.** Layer flow diagram + the ten core rules. | `Dtos.kt`, `EntityMappers.kt`, `FinFlowDatabase.kt` |
 | §6 | MVI Contract Pattern | 80–116 | Shape of State/Intent/Effect and what belongs in each. | `AuthViewModelTest.kt`, `MviViewModel.kt` |
-| §7 | Module Structure | 117–159 | The 18 modules and their one-line responsibilities. | — |
+| §7 | Module Structure | 117–159 | The original 18-module list. Superseded by §26 — read that first. | — |
 | §8 | Feature Module Structure | 160–192 | File layout and naming for a feature module. | — |
 | §9 | Reusable UI and Common Functionality | 193–292 | When a widget belongs in `core:designsystem` rather than a feature. | — |
 | §10 | Backend Tables | 293–305 | Postgres table list. | — |
@@ -35,11 +35,17 @@ The Summary column is hand-written and preserved across regenerations; every oth
 | §17 | Goals | 437–449 | Goals screen requirements. | — |
 | §18 | Analytics | 450–461 | Analytics is computed from Room, not the server. Chart requirements. | `AggregateRows.kt`, `AnalyticsLocalDataSource.kt`, `AnalyticsRepositoryImpl.kt`, `TransactionDao.kt` |
 | §19 | Settings | 462–472 | Settings screen requirements. | — |
-| §20 | Error Handling | 473–492 | `AppResult`/`AppError` taxonomy and where mapping happens. | `AppError.kt`, `NetworkErrorMapper.kt` |
+| §20 | Error Handling | 473–492 | `AppResult`/`AppError` taxonomy and where mapping happens. | `AppError.kt`, `ErrorMessages.kt`, `NetworkErrorMapper.kt` |
 | §21 | Testing Strategy | 493–509 | What to test at each layer. | — |
 | §22 | Development Phases | 510–572 | Build order (phases 1–8) and the recommended commit sequence. | — |
 | §23 | AI-Native Development Workflow | 573–614 | Superseded — points at the context layer that replaced it. | — |
 | §24 | AI Prompts | 615–630 | Superseded — maps the old canned prompts to skills. | — |
 | §25 | Definition of Done | 631–646 | Ship checklist. | `TableRemoteDataSources.kt` |
+| §26 | Module Layout | 647–672 | The 23 modules, the allowed edges, and the two walls that are compile errors. | `AndroidFeatureConventionPlugin.kt`, `DataModule.kt`, `FinFlowRoutes.kt` |
+| §27 | Layer Ownership | 673–699 | **Where each layer lives.** Repositories in core:data, use cases in core:domain, features are presentation-only — and why. | — |
+| §28 | Feature Communication | 700–716 | How two features share without depending on each other: one data layer, and route keys in core:navigation. | — |
+| §29 | Accounts | 717–736 | Balance is derived, never stored. Screen requirements, soft delete, negative opening balances. | `AccountsState.kt` |
+| §30 | Build Variants | 737–768 | dev/qa/prod on the `environment` dimension, per-flavor Supabase credentials, renamed Gradle tasks. | `build.gradle.kts` |
+| §31 | Local Security | 769–799 | Keystore-backed encryption for the auth session, and what is deliberately *not* encrypted. | `EncryptedKeyValueStore.kt`, `EncryptedSessionManager.kt` |
 
-Total: 25 sections, 646 lines.
+Total: 31 sections, 799 lines.

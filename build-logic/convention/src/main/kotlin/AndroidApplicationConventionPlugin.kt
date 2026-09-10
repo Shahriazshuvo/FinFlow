@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import com.finflow.buildlogic.configureFlavors
 import com.finflow.buildlogic.configureKotlinAndroid
 import com.finflow.buildlogic.configureUnitTestDependencies
 import com.finflow.buildlogic.intVersion
@@ -17,6 +18,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
+                configureFlavors(this)
 
                 defaultConfig {
                     targetSdk = libs.intVersion("targetSdk")

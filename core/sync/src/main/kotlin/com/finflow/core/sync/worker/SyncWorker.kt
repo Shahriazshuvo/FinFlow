@@ -15,6 +15,7 @@ import androidx.work.WorkerParameters
 import com.finflow.core.common.dispatcher.DispatcherProvider
 import com.finflow.core.data.sync.Syncable
 import com.finflow.core.data.sync.Synchronizer
+import com.finflow.core.model.SyncTable
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.withContext
@@ -24,6 +25,10 @@ import java.util.concurrent.TimeUnit
  * Runs every [Syncable] repository in dependency order. A table that fails leaves its rows
  * pending and the whole run is retried with backoff — nothing is ever dropped, and the UI
  * keeps reading Room in the meantime (APP_SPEC.md §12).
+ *
+ * The sort is load-bearing. The set is contributed from nine feature modules and Dagger
+ * gives no ordering guarantee, so foreign-key order is imposed here from [SyncTable]
+ * rather than hoped for.
  */
 @HiltWorker
 internal class SyncWorker @AssistedInject constructor(
@@ -35,7 +40,8 @@ internal class SyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = withContext(dispatchers.io) {
-        val allSucceeded = syncables.fold(initial = true) { acc, syncable ->
+        val ordered = syncables.sortedBy { it.table.ordinal }
+        val allSucceeded = ordered.fold(initial = true) { acc, syncable ->
             val succeeded = runCatching { syncable.syncWith(synchronizer) }
                 .onFailure { Log.w(TAG, "Sync failed for ${syncable::class.simpleName}", it) }
                 .getOrDefault(false)

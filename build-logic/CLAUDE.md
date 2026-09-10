@@ -40,9 +40,40 @@ in `com/finflow/buildlogic/CatalogExtensions.kt`.
 `AndroidRoom`, `JvmLibrary`, `JvmHilt`, `KotlinSerialization`.
 
 `AndroidFeatureConventionPlugin` is load-bearing architecture, not convenience: it wires
-`core:designsystem`, `core:ui`, `core:common`, `core:model` and `core:domain` into feature modules
-and deliberately omits `core:database`, `core:network` and `core:data`. That omission is what
-makes the layering rule a compile error. Do not add those dependencies to make something compile.
+`core:designsystem`, `core:ui`, `core:navigation`, `core:common`, `core:model` and `core:domain`
+into feature modules and deliberately omits `core:database`, `core:network`, `core:datastore` and
+`core:data`. That omission is what makes the layering rule a compile error. Do not add those
+dependencies to make something compile — the thing you are reaching for belongs behind a use case.
+Background: `docs/adr/0006-centralized-data-layer.md`.
+
+No feature is ever wired to another feature, which is why feature-to-feature coupling cannot
+happen by accident. Route keys live in `core:navigation` for exactly this reason.
+
+`core:testing` is added to every feature's **test** classpath here, so a feature test gets
+`MainDispatcherRule`, `TEST_CLOCK` and the model builders without declaring anything.
+
+Java toolchain 17, core-library desugaring on (mandatory — `minSdk` is 24 and `java.time` is
+native only from API 26). Unit-test deps come free via `configureUnitTestDependencies`.
+
+## Build flavors
+
+`Flavors.kt` declares one dimension, `environment`, with `dev`, `qa` and `prod` (`APP_SPEC.md`
+§30). `dev` and `qa` take an `applicationIdSuffix` so all three install side by side, and carry
+`BuildConfig.DEBUG_LOGGING = true` — a non-production affordance, deliberately not tied to the
+debug build type.
+
+Both `AndroidApplicationConventionPlugin` and `AndroidLibraryConventionPlugin` call
+`configureFlavors`. Every Android module must declare the dimension or variant resolution fails
+with "unable to find a matching variant"; the pure-JVM modules are exempt because they have no
+Android variants. `configureFlavors` is **two typed overloads**, not one generic function, because
+AGP 9's `CommonExtension` is not generic and only the application flavor type has
+`applicationIdSuffix`.
+
+Adding flavors renamed the variant-aware tasks. Use `:app:assembleDevDebug` and
+`testDevDebugUnitTest`; plain `assembleDebug` and `testDebugUnitTest` are now ambiguous.
+
+Supabase credentials are attached per flavor in `core/network/build.gradle.kts`, reading
+`SUPABASE_URL_<FLAVOR>` with a fallback to the unsuffixed key.
 
 Java toolchain 17, core-library desugaring on (mandatory — `minSdk` is 24 and `java.time` is
 native only from API 26). Unit-test deps come free via `configureUnitTestDependencies`.

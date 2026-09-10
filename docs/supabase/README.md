@@ -29,11 +29,24 @@ Money columns are `numeric(12,2)`. The client holds amounts as integer minor uni
 
 ## Credentials
 
-Add to `local.properties` (git-ignored):
+Add to `local.properties` (git-ignored), or set the same names as environment variables:
 
 ```properties
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<publishable anon key>
 ```
 
-Never put the service-role key in the app.
+These serve every build flavor. To point one environment at its own Supabase project, add a
+suffixed pair — the suffix wins, and anything unsuffixed remains the fallback:
+
+```properties
+SUPABASE_URL_QA=https://<qa-project-ref>.supabase.co
+SUPABASE_ANON_KEY_QA=<qa publishable anon key>
+```
+
+Recognised suffixes are `_DEV`, `_QA` and `_PROD`, matching the three flavors in `APP_SPEC.md`
+§30. Missing credentials are not a build failure — they resolve to `""`, so a fresh clone builds —
+but `SupabaseModule` fails fast at injection time with a message naming the keys.
+
+**Never put the service-role key in the app.** Only the anon/publishable key ships; RLS is the
+security boundary, and `user_id` filters in queries are defence in depth, not the boundary.

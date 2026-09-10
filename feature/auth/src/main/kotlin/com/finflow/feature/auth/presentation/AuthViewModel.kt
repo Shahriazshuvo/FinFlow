@@ -7,6 +7,7 @@ import com.finflow.core.domain.usecase.auth.ObserveSessionUseCase
 import com.finflow.core.domain.usecase.auth.SignInUseCase
 import com.finflow.core.domain.usecase.auth.SignUpUseCase
 import com.finflow.core.model.SessionState
+import com.finflow.core.ui.error.toUserMessage
 import com.finflow.core.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
@@ -92,12 +93,12 @@ class AuthViewModel @Inject constructor(
 }
 
 /**
- * The presentation layer's only translation of [AppError]. Validation messages are already
- * user-facing (they come from `AuthValidator`), so they pass straight through.
+ * Sign-in is the one screen where [AppError.Unauthorized] does not mean "your session
+ * expired" — it means the credentials were wrong — so it overrides that single case and
+ * defers everything else to the shared wording in `core:ui`.
  */
 private fun AppError.toMessage(): String = when (this) {
-    is AppError.Validation -> message
-    AppError.NetworkUnavailable -> "No connection. Check your network and try again."
     AppError.Unauthorized -> "That email and password do not match an account."
-    is AppError.Unknown -> message ?: "Something went wrong. Please try again."
+    AppError.NetworkUnavailable -> "No connection. Check your network and try again."
+    else -> toUserMessage()
 }

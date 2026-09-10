@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.LibraryExtension
+import com.finflow.buildlogic.configureFlavors
 import com.finflow.buildlogic.configureKotlinAndroid
 import com.finflow.buildlogic.configureUnitTestDependencies
 import com.finflow.buildlogic.libs
@@ -16,6 +17,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
+                configureFlavors(this)
 
                 defaultConfig {
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

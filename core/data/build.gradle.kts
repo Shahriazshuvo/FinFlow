@@ -8,6 +8,8 @@ android {
 }
 
 dependencies {
+    testImplementation(project(":core:testing"))
+
     api(project(":core:domain"))
 
     implementation(project(":core:database"))

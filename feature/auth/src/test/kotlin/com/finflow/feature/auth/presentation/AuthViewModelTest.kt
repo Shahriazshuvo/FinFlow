@@ -10,21 +10,18 @@ import com.finflow.core.model.SessionState
 import com.finflow.core.model.UserSession
 import io.mockk.coEvery
 import io.mockk.every
+import com.finflow.core.testing.MainDispatcherRule
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 /**
@@ -35,7 +32,10 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
 
-    private val dispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private val dispatcher get() = mainDispatcherRule.dispatcher
     private val sessionState = MutableStateFlow<SessionState>(SessionState.Unknown)
 
     private val observeSession = mockk<ObserveSessionUseCase>()
@@ -44,13 +44,7 @@ class AuthViewModelTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(dispatcher)
         every { observeSession() } returns sessionState
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     private fun viewModel() = AuthViewModel(observeSession, signIn, signUp)

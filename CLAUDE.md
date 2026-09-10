@@ -1,11 +1,12 @@
 # FinFlow — agent context
 
 Offline-first Android personal-finance app. Kotlin · Compose · Material 3 · Clean Architecture +
-MVI · Hilt · Room · Supabase · WorkManager. 18 Gradle modules.
+MVI · Hilt · Room · Supabase · WorkManager. 23 Gradle modules.
 
-**Current state:** `core:*` is complete (~120 Kotlin files). All seven `feature:*` modules are
-stubs — `Route`, `Screen`, `Navigation` only, with no `Contract`, `ViewModel` or `UiMapper`
-anywhere in the repo yet. Building those is the work in front of you.
+**Current state:** the data layer is complete and centralised — every repository, use case and
+sync path exists and is wired. Presentation is built for `feature:auth` and `feature:accounts`;
+the other seven screens are `EmptyState` stubs. Building them is the work in front of you, and it
+is **presentation-only work**: the use cases they need already exist in `core:domain`.
 
 ## Modules
 
@@ -14,24 +15,31 @@ anywhere in the repo yet. Building those is the work in front of you.
 | `app` | app | Nav host, Hilt root, `MainActivity`, theme wiring |
 | `core:model` | **JVM** | Domain models, `Money`, drafts, sync enums |
 | `core:common` | **JVM** | `AppResult`, `AppError`, dispatchers, formatters, validators, `Clock` |
-| `core:domain` | **JVM** | Repository interfaces and use cases |
+| `core:domain` | **JVM** | Every repository interface and use case, one file per domain |
 | `core:designsystem` | Android | Theme, design tokens, reusable Compose components |
 | `core:ui` | Android | `MviViewModel` base, contract interfaces, effect collection |
 | `core:database` | Android | Room entities, DAOs, local data sources |
 | `core:network` | Android | Supabase client, DTOs, remote data sources |
 | `core:datastore` | Android | Preferences and sync watermarks |
-| `core:data` | Android | Offline-first repository implementations, sync engine |
+| `core:data` | Android | Every repository implementation, the sync engine, session |
 | `core:sync` | Android | WorkManager worker and scheduling |
-| `feature:*` | Android | auth, dashboard, transactions, budgets, goals, analytics, settings |
+| `core:navigation` | Android | `@Serializable` route keys, so features never import each other |
+| `core:security` | Android | Keystore-backed `EncryptedKeyValueStore` for the auth session |
+| `core:testing` | **JVM** | `MainDispatcherRule`, fixed clock, domain-model builders |
+| `feature:*` | Android | auth, dashboard, transactions, accounts, categories, budgets, goals, analytics, settings — **presentation only** |
 
 ## Hard rules
 
 Violating any of these breaks the build or the architecture.
 
 - **`core:model`, `core:common`, `core:domain` are pure JVM.** No Android import may enter them.
-- **`feature:*` may depend only on `core:designsystem`, `core:ui`, `core:common`, `core:model`,
-  `core:domain`.** Never `core:database`, `core:network` or `core:data` — enforced by
-  `AndroidFeatureConventionPlugin`, so a violation is a compile error, not a review comment.
+- **`feature:*` may depend only on `core:designsystem`, `core:ui`, `core:navigation`,
+  `core:common`, `core:model`, `core:domain`.** Never `core:database`, `core:network` or
+  `core:data` — enforced by `AndroidFeatureConventionPlugin`, so a violation is a compile error,
+  not a review comment. Features never see each other either; they share through the data layer
+  and through route keys in `core:navigation`.
+- **Data is not UI-scoped.** Repositories live in `core:data`, not in the feature that displays
+  them — three screens read accounts. See `docs/adr/0006-centralized-data-layer.md`.
 - **No literal dp, alpha or duration outside the design system's `theme/` package.** They live in
   `Dimens.kt` and `Spacing.kt` and are read as `FinFlowTheme.dimens` / `.spacing` / `.alphas`.
 - **Money is `Money`** (`core:model`, integer minor units) — `Long` in Room, `numeric(12,2)` in
@@ -61,9 +69,9 @@ Violating any of these breaks the build or the architecture.
 ## Commands
 
 ```bash
-./gradlew :app:assembleDebug     # whole module graph
+./gradlew :app:assembleDevDebug  # whole module graph — variants are dev/qa/prod × debug/release
 ./gradlew test                   # JVM unit tests
-./gradlew testDebugUnitTest      # Android unit tests
+./gradlew testDevDebugUnitTest   # Android unit tests (plain `testDebugUnitTest` is ambiguous)
 bash scripts/check-context.sh    # context-layer invariants — run before you finish
 ```
 
@@ -73,10 +81,12 @@ Read these **on demand**, not preemptively.
 
 | Doing this | Read |
 |---|---|
-| Building a feature screen, ViewModel, Contract | skill `finflow-mvi-feature`, then `feature/CLAUDE.md` |
-| Any Compose UI — spacing, colors, components | skill `finflow-design-system` |
-| Sync, watermarks, tombstones, "why is this stale" | skill `finflow-offline-sync`, then `core/data/CLAUDE.md` |
-| Room entity, column, DAO, database version | skill `finflow-room-migration`, then `core/database/CLAUDE.md` |
+| Building a feature screen, ViewModel, Contract | `feature/CLAUDE.md`, then `feature:accounts` as the worked example |
+| Writing a test — fakes, fixed clock, model builders | `core/testing/src/main/kotlin/com/finflow/core/testing/` |
+| Any Compose UI — spacing, colors, components | `core/designsystem/CLAUDE.md` |
+| Sync, watermarks, tombstones, "why is this stale" | `core/data/CLAUDE.md` |
+| Room entity, column, DAO, database version | `core/database/CLAUDE.md` |
+| How two features share data, or navigate to each other | `APP_SPEC.md` §28, then `core/navigation/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
 | Gradle, AGP, convention plugins, version catalog | `build-logic/CLAUDE.md` |
 | Any SQL, RLS or Postgres | skill `supabase-postgres-best-practices`, then `docs/supabase/README.md` |
 | Why a decision was made | `docs/adr/` — index in `docs/README.md` |

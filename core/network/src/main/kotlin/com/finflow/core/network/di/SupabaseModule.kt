@@ -1,6 +1,7 @@
 package com.finflow.core.network.di
 
 import com.finflow.core.network.BuildConfig
+import com.finflow.core.network.auth.EncryptedSessionManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,7 +18,9 @@ internal object SupabaseModule {
 
     @Provides
     @Singleton
-    fun provideSupabaseClient(): SupabaseClient {
+    fun provideSupabaseClient(
+        sessionManager: EncryptedSessionManager,
+    ): SupabaseClient {
         // Credentials come from local.properties/env at build time and default to empty so
         // a fresh clone still builds. Failing here — loudly, once, at DI time — beats a
         // confusing 401 on the first request.
@@ -29,7 +32,11 @@ internal object SupabaseModule {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
-            install(Auth)
+            install(Auth) {
+                // Replaces SettingsSessionManager, which persists the refresh token in
+                // plain SharedPreferences. See core:security.
+                this.sessionManager = sessionManager
+            }
             install(Postgrest)
         }
     }

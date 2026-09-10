@@ -36,6 +36,28 @@ interface BudgetDao {
     suspend fun getById(id: String): BudgetEntity?
 
     /**
+     * The local half of Postgres's `budgets_user_category_month_unique_idx`. The entity
+     * carries the same unique index, but `@Upsert` would quietly replace the existing row
+     * rather than fail, so "one budget per category per month" is checked before the write
+     * and reported to the form as a conflict.
+     */
+    @Query(
+        """
+        SELECT id FROM budgets
+        WHERE user_id = :userId AND category_id = :categoryId AND month = :month
+          AND deleted_at IS NULL
+          AND (:excludingId IS NULL OR id != :excludingId)
+        LIMIT 1
+        """,
+    )
+    suspend fun findConflictingId(
+        userId: String,
+        categoryId: String,
+        month: YearMonth,
+        excludingId: String?,
+    ): String?
+
+    /**
      * Budget spend for a month. The date range is passed in rather than derived in SQL so
      * the month boundary is computed once, in Kotlin, with the same calendar rules the UI
      * uses.

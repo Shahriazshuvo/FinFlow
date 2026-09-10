@@ -2,7 +2,7 @@
 
 This is the **one module where literal `.dp` and alpha values are legal**, and only inside
 `theme/`. Everywhere else in the app they are a bug that `scripts/check-context.sh` fails on.
-Playbook: skill `finflow-design-system`. Spec: `APP_SPEC.md` §9.
+Spec: `APP_SPEC.md` §9.
 
 ## Tokens
 

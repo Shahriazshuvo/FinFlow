@@ -99,6 +99,9 @@ internal class TransactionRepositoryImpl @Inject constructor(
         return AppResult.Success(Unit)
     }
 
+    /** Pull order is imposed on this, not on Dagger's set iteration. */
+    override val table: SyncTable = SyncTable.TRANSACTIONS
+
     override suspend fun syncWith(synchronizer: Synchronizer): Boolean {
         val userId = currentUser.userIdOrNull() ?: return false
         val result = runCatchingApp(errorMapper::map) {
