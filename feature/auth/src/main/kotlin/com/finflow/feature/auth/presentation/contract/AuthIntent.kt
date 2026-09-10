@@ -1,8 +1,11 @@
-package com.finflow.feature.auth.presentation
+package com.finflow.feature.auth.presentation.contract
 
 import com.finflow.core.ui.mvi.UiIntent
 
-/** Everything the sign in / sign up screen can send to [AuthViewModel]. */
+/**
+ * Everything the sign in / sign up screen can send to
+ * [com.finflow.feature.auth.presentation.viewmodel.AuthViewModel].
+ */
 sealed interface AuthIntent : UiIntent {
     data class EmailChanged(val value: String) : AuthIntent
 

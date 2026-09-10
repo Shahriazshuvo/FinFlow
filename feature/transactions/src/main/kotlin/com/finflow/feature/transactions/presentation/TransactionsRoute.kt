@@ -1,6 +1,7 @@
 package com.finflow.feature.transactions.presentation
 
 import androidx.compose.runtime.Composable
+import com.finflow.feature.transactions.presentation.screen.TransactionsScreen
 
 /**
  * Entry point for the Transactions feature. Phase 1/2 ships the route and its place in the

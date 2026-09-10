@@ -1,9 +1,12 @@
-package com.finflow.feature.accounts.presentation
+package com.finflow.feature.accounts.presentation.contract
 
 import com.finflow.core.model.AccountType
 import com.finflow.core.ui.mvi.UiIntent
 
-/** Everything the accounts screen can send to [AccountsViewModel]. */
+/**
+ * Everything the accounts screen can send to
+ * [com.finflow.feature.accounts.presentation.viewmodel.AccountsViewModel].
+ */
 sealed interface AccountsIntent : UiIntent {
     data object AddClicked : AccountsIntent
 

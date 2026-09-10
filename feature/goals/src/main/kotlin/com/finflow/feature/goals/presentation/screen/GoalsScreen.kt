@@ -1,4 +1,4 @@
-package com.finflow.feature.transactions.presentation
+package com.finflow.feature.goals.presentation.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,10 +9,10 @@ import com.finflow.core.designsystem.component.EmptyState
 import com.finflow.core.designsystem.theme.FinFlowTheme
 
 @Composable
-internal fun TransactionsScreen(modifier: Modifier = Modifier) {
+internal fun GoalsScreen(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         EmptyState(
-            title = "Transactions",
+            title = "Goals",
             description = "This feature is not built yet.",
         )
     }
@@ -20,8 +20,8 @@ internal fun TransactionsScreen(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun TransactionsScreenPreview() {
+private fun GoalsScreenPreview() {
     FinFlowTheme {
-        TransactionsScreen()
+        GoalsScreen()
     }
 }

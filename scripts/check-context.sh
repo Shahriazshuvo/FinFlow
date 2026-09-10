@@ -211,6 +211,33 @@ if offenders:
 else:
     ok(CHECK)
 
+# ------------------------------------------------ 10. feature package layout
+# `feature:auth` grew a `presentation/screen/` package while the other eight stayed flat,
+# and nothing noticed. Each role gets its own package; XRoute is the one file that stays at
+# the root, because it is the only one that touches all four. See feature/CLAUDE.md.
+CHECK = "feature presentation files sit in their role package"
+ROLES = {
+    "Screen": "screen", "ViewModel": "viewmodel", "State": "contract",
+    "Intent": "contract", "Effect": "contract", "UiMapper": "mapper",
+}
+offenders = []
+for path in Path("feature").rglob("presentation/*.kt"):
+    if "/build/" in str(path):
+        continue
+    stem = path.stem
+    if stem.endswith("Route"):
+        continue
+    role = next((r for r in ROLES if stem.endswith(r)), None)
+    if role:
+        offenders.append(f"{path}: belongs in presentation/{ROLES[role]}/")
+    else:
+        offenders.append(f"{path}: only *Route.kt belongs at the presentation root")
+if offenders:
+    fail(CHECK, "one package per role — see the layout in feature/CLAUDE.md:\n      "
+                + "\n      ".join(offenders))
+else:
+    ok(CHECK)
+
 # ------------------------------------------------------------------ report
 print()
 if failures:

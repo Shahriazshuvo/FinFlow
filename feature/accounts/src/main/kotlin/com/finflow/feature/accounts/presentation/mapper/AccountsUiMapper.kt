@@ -1,9 +1,10 @@
-package com.finflow.feature.accounts.presentation
+package com.finflow.feature.accounts.presentation.mapper
 
 import com.finflow.core.common.formatter.CurrencyFormatter
 import com.finflow.core.model.AccountWithBalance
 import com.finflow.core.model.AccountType
 import com.finflow.core.model.Money
+import com.finflow.feature.accounts.presentation.contract.AccountUiModel
 import javax.inject.Inject
 
 /**

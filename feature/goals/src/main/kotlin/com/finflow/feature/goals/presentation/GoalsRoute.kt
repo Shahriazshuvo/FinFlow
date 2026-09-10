@@ -1,6 +1,7 @@
 package com.finflow.feature.goals.presentation
 
 import androidx.compose.runtime.Composable
+import com.finflow.feature.goals.presentation.screen.GoalsScreen
 
 /**
  * Entry point for the Goals feature. Phase 1/2 ships the route and its place in the

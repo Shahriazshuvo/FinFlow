@@ -1,4 +1,4 @@
-package com.finflow.feature.analytics.presentation
+package com.finflow.feature.settings.presentation.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,10 +9,10 @@ import com.finflow.core.designsystem.component.EmptyState
 import com.finflow.core.designsystem.theme.FinFlowTheme
 
 @Composable
-internal fun AnalyticsScreen(modifier: Modifier = Modifier) {
+internal fun SettingsScreen(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         EmptyState(
-            title = "Analytics",
+            title = "Settings",
             description = "This feature is not built yet.",
         )
     }
@@ -20,8 +20,8 @@ internal fun AnalyticsScreen(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun AnalyticsScreenPreview() {
+private fun SettingsScreenPreview() {
     FinFlowTheme {
-        AnalyticsScreen()
+        SettingsScreen()
     }
 }

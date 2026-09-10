@@ -1,4 +1,4 @@
-package com.finflow.feature.auth.presentation
+package com.finflow.feature.auth.presentation.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.finflow.core.common.error.AppError
@@ -9,6 +9,9 @@ import com.finflow.core.domain.usecase.auth.SignUpUseCase
 import com.finflow.core.model.SessionState
 import com.finflow.core.ui.error.toUserMessage
 import com.finflow.core.ui.mvi.MviViewModel
+import com.finflow.feature.auth.presentation.contract.AuthEffect
+import com.finflow.feature.auth.presentation.contract.AuthIntent
+import com.finflow.feature.auth.presentation.contract.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach

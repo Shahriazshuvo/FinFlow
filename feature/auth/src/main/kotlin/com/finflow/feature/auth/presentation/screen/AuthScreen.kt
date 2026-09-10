@@ -1,4 +1,4 @@
-package com.finflow.feature.auth.presentation
+package com.finflow.feature.auth.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +20,8 @@ import com.finflow.core.designsystem.component.FinFlowTextButton
 import com.finflow.core.designsystem.component.FinFlowTextField
 import com.finflow.core.designsystem.component.LoadingState
 import com.finflow.core.designsystem.theme.FinFlowTheme
+import com.finflow.feature.auth.presentation.contract.AuthIntent
+import com.finflow.feature.auth.presentation.contract.AuthState
 
 @Composable
 internal fun AuthScreen(

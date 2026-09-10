@@ -12,6 +12,7 @@ class ObserveAccountsUseCase @Inject constructor(
     private val repository: AccountRepository,
 ) {
     operator fun invoke(): Flow<List<Account>> = repository.observeAccounts()
+    //todo: uiStateAcccount
 }
 
 class ObserveAccountBalancesUseCase @Inject constructor(

@@ -1,4 +1,4 @@
-package com.finflow.feature.accounts.presentation
+package com.finflow.feature.accounts.presentation.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.finflow.core.common.result.AppResult
@@ -7,6 +7,10 @@ import com.finflow.core.model.AccountDraft
 import com.finflow.core.model.Money
 import com.finflow.core.ui.error.toUserMessage
 import com.finflow.core.ui.mvi.MviViewModel
+import com.finflow.feature.accounts.presentation.contract.AccountsEffect
+import com.finflow.feature.accounts.presentation.contract.AccountsIntent
+import com.finflow.feature.accounts.presentation.contract.AccountsState
+import com.finflow.feature.accounts.presentation.mapper.AccountsUiMapper
 import com.finflow.core.domain.usecase.account.DeleteAccountUseCase
 import com.finflow.core.domain.usecase.account.ObserveAccountBalancesUseCase
 import com.finflow.core.domain.usecase.account.SaveAccountUseCase

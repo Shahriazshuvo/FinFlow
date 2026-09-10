@@ -50,6 +50,6 @@ New ADRs: copy `docs/adr/_template.md`, take the next number, never renumber an 
 Two scripts keep this honest:
 
 ```bash
-bash scripts/check-context.sh    # 9 assertions; fails if the docs stopped being true
+bash scripts/check-context.sh    # 10 assertions; fails if the docs stopped being true
 bash scripts/gen-spec-map.sh     # regenerate spec-map.md after editing APP_SPEC.md
 ```

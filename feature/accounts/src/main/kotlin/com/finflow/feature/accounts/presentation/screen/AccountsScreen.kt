@@ -1,4 +1,4 @@
-package com.finflow.feature.accounts.presentation
+package com.finflow.feature.accounts.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +34,10 @@ import com.finflow.core.designsystem.component.SyncStatusChip
 import com.finflow.core.designsystem.icon.FinFlowIcons
 import com.finflow.core.designsystem.theme.FinFlowTheme
 import com.finflow.core.model.AccountType
+import com.finflow.feature.accounts.presentation.contract.AccountUiModel
+import com.finflow.feature.accounts.presentation.contract.AccountsIntent
+import com.finflow.feature.accounts.presentation.contract.AccountsState
+import com.finflow.feature.accounts.presentation.mapper.label
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

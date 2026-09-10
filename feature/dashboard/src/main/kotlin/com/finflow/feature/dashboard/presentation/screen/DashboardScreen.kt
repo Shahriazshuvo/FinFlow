@@ -1,4 +1,4 @@
-package com.finflow.feature.settings.presentation
+package com.finflow.feature.dashboard.presentation.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,10 +9,10 @@ import com.finflow.core.designsystem.component.EmptyState
 import com.finflow.core.designsystem.theme.FinFlowTheme
 
 @Composable
-internal fun SettingsScreen(modifier: Modifier = Modifier) {
+internal fun DashboardScreen(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         EmptyState(
-            title = "Settings",
+            title = "Dashboard",
             description = "This feature is not built yet.",
         )
     }
@@ -20,8 +20,8 @@ internal fun SettingsScreen(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun SettingsScreenPreview() {
+private fun DashboardScreenPreview() {
     FinFlowTheme {
-        SettingsScreen()
+        DashboardScreen()
     }
 }

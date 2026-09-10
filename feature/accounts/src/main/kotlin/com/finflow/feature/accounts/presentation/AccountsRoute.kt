@@ -6,6 +6,9 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finflow.core.ui.util.ObserveAsEvents
+import com.finflow.feature.accounts.presentation.contract.AccountsEffect
+import com.finflow.feature.accounts.presentation.screen.AccountsScreen
+import com.finflow.feature.accounts.presentation.viewmodel.AccountsViewModel
 
 /**
  * The only stateful composable in the feature: it owns the ViewModel, collects state

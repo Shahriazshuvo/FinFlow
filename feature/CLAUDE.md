@@ -16,20 +16,37 @@ a form. The other seven are `EmptyState` stubs with finished use cases waiting b
 
 One top-level class per file.
 
+Each role gets its own package. `scripts/check-context.sh` fails on a presentation file left at
+the root.
+
 ```
 feature/accounts/src/main/kotlin/com/finflow/feature/accounts/
 ├── presentation/
-│   ├── AccountsState.kt         data class, implements UiState
-│   ├── AccountsIntent.kt        sealed interface, implements UiIntent
-│   ├── AccountsEffect.kt        sealed interface, implements UiEffect
-│   ├── AccountsViewModel.kt     @HiltViewModel, extends MviViewModel, internal
-│   ├── AccountsUiMapper.kt      domain model → UI model
 │   ├── AccountsRoute.kt         stateful: hiltViewModel, state collection, effects
-│   ├── AccountsScreen.kt        stateless, internal, @Preview
+│   ├── screen/
+│   │   └── AccountsScreen.kt    stateless, internal, @Preview
+│   ├── viewmodel/
+│   │   └── AccountsViewModel.kt @HiltViewModel, extends MviViewModel, internal
+│   ├── contract/
+│   │   ├── AccountsState.kt     data class, implements UiState
+│   │   ├── AccountsIntent.kt    sealed interface, implements UiIntent
+│   │   └── AccountsEffect.kt    sealed interface, implements UiEffect
+│   ├── mapper/
+│   │   └── AccountsUiMapper.kt  domain model → UI model
 │   └── components/              feature-local composables only
 └── navigation/
     └── AccountsNavigation.kt    the NavGraphBuilder extension only
 ```
+
+**`XRoute.kt` stays at the root on purpose.** It is the one file that touches all four packages —
+it resolves the ViewModel, collects the state, maps effects and calls the screen — so it belongs
+above them rather than inside any one of them.
+
+A test mirrors the package of what it tests: `AuthViewModelTest` lives in
+`src/test/kotlin/.../presentation/viewmodel/`.
+
+`contract/` does not import from `viewmodel/`. A KDoc link to the ViewModel from an Intent or
+Effect is written fully qualified so the arrow does not point backwards.
 
 The `@Serializable` route key is **not** here — it lives in `com.finflow.core.navigation`, so
 another feature can navigate to this one without depending on it.

@@ -1,6 +1,7 @@
 package com.finflow.feature.categories.presentation
 
 import androidx.compose.runtime.Composable
+import com.finflow.feature.categories.presentation.screen.CategoriesScreen
 
 /**
  * Entry point for the Categories feature. `CategoryUseCases` in `core:domain` is complete;

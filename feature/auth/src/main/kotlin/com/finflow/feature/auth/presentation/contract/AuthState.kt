@@ -1,4 +1,4 @@
-package com.finflow.feature.auth.presentation
+package com.finflow.feature.auth.presentation.contract
 
 import com.finflow.core.ui.mvi.UiState
 

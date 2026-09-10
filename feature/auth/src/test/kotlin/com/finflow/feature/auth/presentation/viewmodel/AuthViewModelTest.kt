@@ -1,4 +1,4 @@
-package com.finflow.feature.auth.presentation
+package com.finflow.feature.auth.presentation.viewmodel
 
 import app.cash.turbine.test
 import com.finflow.core.common.error.AppError
@@ -8,9 +8,12 @@ import com.finflow.core.domain.usecase.auth.SignInUseCase
 import com.finflow.core.domain.usecase.auth.SignUpUseCase
 import com.finflow.core.model.SessionState
 import com.finflow.core.model.UserSession
+import com.finflow.core.testing.MainDispatcherRule
+import com.finflow.feature.auth.presentation.contract.AuthEffect
+import com.finflow.feature.auth.presentation.contract.AuthIntent
+import com.finflow.feature.auth.presentation.contract.AuthState
 import io.mockk.coEvery
 import io.mockk.every
-import com.finflow.core.testing.MainDispatcherRule
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
