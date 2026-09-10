@@ -4,9 +4,9 @@ Covers all nine feature modules; they are identical in shape. Spec: `APP_SPEC.md
 feature contains), §3 and §6 (how features share without seeing each other), §7 (MVI), plus §13,
 the per-screen requirements.
 
-**A feature holds presentation and navigation only.** Repositories live in `core:data`, use cases
-in `core:domain`. Data is not UI-scoped — three screens read accounts — so no feature owns a
-table. Reasoning: `docs/adr/0006-centralized-data-layer.md`.
+**A feature holds presentation and navigation only.** Repositories live in `com.finflow.core.data`,
+use cases in `com.finflow.core.domain`. Data is not UI-scoped — three screens read accounts —
+so no feature owns a table. Reasoning: `docs/adr/0006-centralized-data-layer.md`.
 
 **Two reference implementations.** `feature:auth` and `feature:accounts` are both fully built;
 copy their shape. `feature:accounts` is the better model for a list-plus-editor screen, `auth` for
@@ -31,8 +31,8 @@ feature/accounts/src/main/kotlin/com/finflow/feature/accounts/
     └── AccountsNavigation.kt    the NavGraphBuilder extension only
 ```
 
-The `@Serializable` route key is **not** here — it lives in `core:navigation` so another feature
-can navigate to this one without depending on it.
+The `@Serializable` route key is **not** here — it lives in `com.finflow.core.navigation`, so
+another feature can navigate to this one without depending on it.
 
 ## The contract
 
@@ -54,33 +54,37 @@ intent. Sync updates Room and the screen follows on its own — see `AccountsVie
 ## Route vs Screen
 
 `XRoute` is the only stateful composable: `hiltViewModel()`, `collectAsStateWithLifecycle()`, and
-`ObserveAsEvents(viewModel.effect)` from `core:ui` for one-shot events. `XScreen` is `internal`,
-takes state plus lambdas, holds no ViewModel, and has a `@Preview`. That split is what makes the
-screen previewable and testable.
+`ObserveAsEvents(viewModel.effect)` from `com.finflow.core.ui` for one-shot events. `XScreen`
+is `internal`, takes state plus lambdas, holds no ViewModel, and has a `@Preview`. That split
+is what makes the screen previewable and testable.
 
 Keep the ViewModel `internal`. `XRoute` is public, so resolve the ViewModel in the body rather
 than as a default parameter — an internal type in a public signature does not compile.
 
 ## Rules
 
-- **Call use cases, never repositories.** A feature cannot even see `core:data` — the convention
-  plugin does not put it on the classpath. Same for `core:database`, `core:network` and
-  `core:datastore`: if you need a preference, there is a use case for it
-  (`ObserveCurrencyCodeUseCase`), not a `DataStore`.
+- **Call use cases, never repositories.** `com.finflow.core.data`, `.database`, `.network`,
+  `.datastore`, `.security` and `.sync` are off limits. If you need a preference, there is a use
+  case for it (`ObserveCurrencyCodeUseCase`), not a `DataStore`.
+
+  **The compiler will not stop you.** `:core` is one module, so all of it is on your classpath;
+  check 3 of `scripts/check-context.sh` is what fails on those imports. Run it before you
+  finish. Background: `docs/adr/0008-single-core-module.md`.
 - **Never import another feature.** Share data through a use case, and navigate through a key in
-  `core:navigation`. `scripts/check-context.sh` and the classpath both enforce this.
+  `com.finflow.core.navigation`. No feature is ever on another feature's classpath, so this one
+  the build still enforces.
 - **No literal dp, alpha or duration.** Use `FinFlowTheme.dimens` / `.spacing` / `.alphas`.
   `scripts/check-context.sh` fails the build on a literal in this tree.
 - **Formatted strings cross the boundary, not `Money`.** The `UiMapper` turns domain models into
   UI models the screen can render directly.
-- **Errors reach the UI through `AppError.toUserMessage()`** in `core:ui/error/`. A raw Supabase
-  or SQLite exception must never reach a composable.
+- **Errors reach the UI through `AppError.toUserMessage()`** in `com.finflow.core.ui.error`. A raw
+  Supabase or SQLite exception must never reach a composable.
 - `internal` by default. Only the navigation entry point and `XRoute` are public.
 - A `build.gradle.kts` here is six lines — the plugin alias and a namespace. If you are adding
   dependencies, you are almost certainly reaching through a wall you should not be reaching
   through.
-- A widget that appears in two or more features belongs in `core:designsystem`, not in
-  `components/`.
+- A widget that appears in two or more features belongs in `com.finflow.core.designsystem`,
+  not in `components/`.
 
 ## Tests
 

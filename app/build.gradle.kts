@@ -28,19 +28,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:common"))
-    implementation(project(":core:model"))
-    implementation(project(":core:navigation"))
-    implementation(project(":core:domain"))
-    implementation(project(":core:data"))
-    implementation(project(":core:datastore"))
-    implementation(project(":core:sync"))
+    implementation(project(":core"))
 
-    // Every feature module must be listed here, including ones with no screen yet: a feature
-    // owns its own Hilt bindings now, and a module missing from this list contributes no
-    // `@IntoSet Syncable`, so its table silently stops syncing without any build error.
+    // Every feature module must be listed here, including ones with no screen yet — a module
+    // absent from this list contributes no navigation graph, so its route is unreachable.
+    // (The `@IntoSet Syncable` bindings all live in `core:data`'s `SyncableModule`; they have
+    // not been feature-owned since `docs/adr/0006-centralized-data-layer.md`.)
     implementation(project(":feature:accounts"))
     implementation(project(":feature:analytics"))
     implementation(project(":feature:auth"))

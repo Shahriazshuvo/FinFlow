@@ -24,19 +24,8 @@ rootProject.name = "FinFlow"
 
 include(":app")
 
-include(":core:common")
-include(":core:data")
-include(":core:database")
-include(":core:datastore")
-include(":core:designsystem")
-include(":core:domain")
-include(":core:model")
-include(":core:navigation")
-include(":core:network")
-include(":core:security")
+include(":core")
 include(":core:testing")
-include(":core:sync")
-include(":core:ui")
 
 include(":feature:accounts")
 include(":feature:analytics")

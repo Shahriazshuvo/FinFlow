@@ -1,52 +1,50 @@
 # FinFlow — agent context
 
 Offline-first Android personal-finance app. Kotlin · Compose · Material 3 · Clean Architecture +
-MVI · Hilt · Room · Supabase · WorkManager. 23 Gradle modules.
+MVI · Hilt · Room · Supabase · WorkManager. 12 Gradle modules.
 
 **Current state:** the data layer is complete and centralised — every repository, use case and
 sync path exists and is wired. Presentation is built for `feature:auth` and `feature:accounts`;
 the other seven screens are `EmptyState` stubs. Building them is the work in front of you, and it
-is **presentation-only work**: the use cases they need already exist in `core:domain`.
+is **presentation-only work**: the use cases they need already exist in `com.finflow.core.domain`.
 
 ## Modules
 
 | Module | Type | Responsibility |
 |---|---|---|
 | `app` | app | Nav host, Hilt root, `MainActivity`, theme wiring |
-| `core:model` | **JVM** | Domain models, `Money`, drafts, sync enums |
-| `core:common` | **JVM** | `AppResult`, `AppError`, dispatchers, formatters, validators, `Clock` |
-| `core:domain` | **JVM** | Every repository interface and use case, one file per domain |
-| `core:designsystem` | Android | Theme, design tokens, reusable Compose components |
-| `core:ui` | Android | `MviViewModel` base, contract interfaces, effect collection |
-| `core:database` | Android | Room entities, DAOs, local data sources |
-| `core:network` | Android | Supabase client, DTOs, remote data sources |
-| `core:datastore` | Android | Preferences and sync watermarks |
-| `core:data` | Android | Every repository implementation, the sync engine, session |
-| `core:sync` | Android | WorkManager worker and scheduling |
-| `core:navigation` | Android | `@Serializable` route keys, so features never import each other |
-| `core:security` | Android | Keystore-backed `EncryptedKeyValueStore` for the auth session |
-| `core:testing` | **JVM** | `MainDispatcherRule`, fixed clock, domain-model builders |
+| `core` | Android | Everything below presentation, as twelve packages — see the table in `core/CLAUDE.md` |
+| `core:testing` | Android | `MainDispatcherRule`, fixed clock, domain-model builders |
 | `feature:*` | Android | auth, dashboard, transactions, accounts, categories, budgets, goals, analytics, settings — **presentation only** |
+
+`:core` is one module holding `model`, `common`, `domain`, `database`, `network`, `datastore`,
+`data`, `sync`, `security`, `designsystem`, `ui` and `navigation` as packages under
+`com.finflow.core.*`. It was twelve modules until
+`docs/adr/0008-single-core-module.md`; that ADR is the place to start if you are wondering why
+a layering rule below is a script check rather than a compile error.
 
 ## Hard rules
 
 Violating any of these breaks the build or the architecture.
 
-- **`core:model`, `core:common`, `core:domain` are pure JVM.** No Android import may enter them.
-- **`feature:*` may depend only on `core:designsystem`, `core:ui`, `core:navigation`,
-  `core:common`, `core:model`, `core:domain`.** Never `core:database`, `core:network` or
-  `core:data` — enforced by `AndroidFeatureConventionPlugin`, so a violation is a compile error,
-  not a review comment. Features never see each other either; they share through the data layer
-  and through route keys in `core:navigation`.
-- **Data is not UI-scoped.** Repositories live in `core:data`, not in the feature that displays
-  them — three screens read accounts. See `docs/adr/0006-centralized-data-layer.md`.
+- **`feature:*` holds presentation only.** It may use `com.finflow.core.` `designsystem`, `ui`,
+  `navigation`, `common`, `model` and `domain`, and never `data`, `database`, `network`,
+  `datastore`, `security` or `sync`. Since `:core` is one module the compiler will not stop you —
+  **check 3 of `scripts/check-context.sh` is the only guard, so run it before you finish.**
+  Features never see each other either; they share through use cases and through route keys in
+  `com.finflow.core.navigation`.
+- **DTOs never leave `core/network/`, entities never leave `core/database/`.** Both are
+  `internal` to `:core` as a whole, so nothing inside `:core` enforces this any more.
+- **Data is not UI-scoped.** Repositories live in `com.finflow.core.data`, not in the feature
+  that displays them — three screens read accounts. See `docs/adr/0006-centralized-data-layer.md`.
 - **No literal dp, alpha or duration outside the design system's `theme/` package.** They live in
   `Dimens.kt` and `Spacing.kt` and are read as `FinFlowTheme.dimens` / `.spacing` / `.alphas`.
-- **Money is `Money`** (`core:model`, integer minor units) — `Long` in Room, `numeric(12,2)` in
-  Postgres. Never `Double` or `Float`.
+- **Money is `Money`** (`com.finflow.core.model`, integer minor units) — `Long` in Room,
+  `numeric(12,2)` in Postgres. Never `Double` or `Float`.
 - **Room is the source of truth.** Every read is a `Flow` from Room; every write lands in Room
   first with a `SyncStatus`, then WorkManager pushes. The UI never sees a Room entity or a DTO.
-- **MVI:** `XState` / `XIntent` / `XEffect`, ViewModel extends `MviViewModel` from `core:ui`.
+- **MVI:** `XState` / `XIntent` / `XEffect`, ViewModel extends `MviViewModel` from
+  `com.finflow.core.ui`.
 - **Only the Supabase anon/publishable key ships.** RLS is the security boundary; `user_id`
   filters in queries are defence in depth, not the boundary.
 - **Inject `java.time.Clock`.** Never call `Instant.now()` or `LocalDate.now()` directly — sync
@@ -64,16 +62,18 @@ Violating any of these breaks the build or the architecture.
   `gradle/libs.versions.toml` before bumping anything. `supabase` 3.7.0+ needs Kotlin 2.4.x.
 - **KSP must track the Kotlin version's semver line.**
 - JDK 17. Core-library desugaring is mandatory — `java.time` is native only from API 26.
-- Room is at `version = 1` with schemas exported to `core/database/schemas` and committed.
+- Room is at `version = 1` with schemas exported to `core/schemas` and committed.
 
 ## Commands
 
 ```bash
 ./gradlew :app:assembleDevDebug  # whole module graph — variants are dev/qa/prod × debug/release
-./gradlew test                   # JVM unit tests
-./gradlew testDevDebugUnitTest   # Android unit tests (plain `testDebugUnitTest` is ambiguous)
+./gradlew testDevDebugUnitTest   # every unit test (plain `testDebugUnitTest` is ambiguous)
 bash scripts/check-context.sh    # context-layer invariants — run before you finish
 ```
+
+`:core` is an Android module, so **all** unit tests run under `testDevDebugUnitTest`. Plain
+`./gradlew test` no longer runs anything useful — nothing is a JVM module any more.
 
 ## Where to look
 
@@ -83,19 +83,16 @@ Read these **on demand**, not preemptively.
 |---|---|
 | Building a feature screen, ViewModel, Contract | `feature/CLAUDE.md`, then `feature:accounts` as the worked example |
 | Writing a test — fakes, fixed clock, model builders | `core/testing/src/main/kotlin/com/finflow/core/testing/` |
-| Any Compose UI — spacing, colors, components | `core/designsystem/CLAUDE.md` |
-| Sync, watermarks, tombstones, "why is this stale" | `core/data/CLAUDE.md` |
-| Room entity, column, DAO, database version | `core/database/CLAUDE.md` |
-| How two features share data, or navigate to each other | `APP_SPEC.md` §3 and §6, then `core/navigation/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
+| Anything inside `:core` — Compose UI, sync, Room, the package walls | `core/CLAUDE.md` |
+| How two features share data, or navigate to each other | `APP_SPEC.md` §3 and §6, then `core/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
 | Gradle, AGP, convention plugins, version catalog | `build-logic/CLAUDE.md` |
 | Any SQL, RLS or Postgres | skill `supabase-postgres-best-practices`, then `docs/supabase/README.md` |
 | Why a decision was made | `docs/adr/` — index in `docs/README.md` |
 | A detail from the spec | `docs/architecture/spec-map.md` — then read **only** that line range |
 | Module dependency edges and where each wall is enforced | `docs/architecture/module-graph.md` |
 
-`feature/CLAUDE.md`, `core/data/CLAUDE.md`, `core/database/CLAUDE.md`,
-`core/designsystem/CLAUDE.md` and `build-logic/CLAUDE.md` load automatically when you edit files
-in those trees.
+`feature/CLAUDE.md`, `core/CLAUDE.md` and `build-logic/CLAUDE.md` load automatically when you
+edit files in those trees.
 
 ## APP_SPEC.md
 
@@ -117,7 +114,10 @@ that dangle, not the ones that silently land on the wrong section.
 
 ## Before you finish
 
-- `bash scripts/check-context.sh && ./gradlew test`
+- `bash scripts/check-context.sh && ./gradlew testDevDebugUnitTest`
+- Touched anything under `feature/` → check-context is the **only** thing standing between you
+  and an import of the data layer. It is not optional any more.
 - Added or renamed a module → update the table above and `docs/architecture/module-graph.md`
-- Bumped the Room version → migration + committed `schemas/N.json` + a migration test
+- Bumped the Room version → migration + the new `N.json` committed under `core/schemas` + a
+  migration test
 - Made an architectural decision → add `docs/adr/NNNN-*.md`

@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <bytecodeTargetLevel target="17" />
+    <bytecodeTargetLevel target="25">
+      <module name="FinFlow.core.data" target="25" />
+      <module name="FinFlow.core.database" target="25" />
+      <module name="FinFlow.core.datastore" target="25" />
+      <module name="FinFlow.core.designsystem" target="25" />
+      <module name="FinFlow.core.navigation" target="25" />
+      <module name="FinFlow.core.network" target="25" />
+      <module name="FinFlow.core.security" target="25" />
+      <module name="FinFlow.core.sync" target="25" />
+      <module name="FinFlow.core.ui" target="25" />
+    </bytecodeTargetLevel>
   </component>
 </project>

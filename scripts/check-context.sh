@@ -30,7 +30,7 @@ if not claude.exists():
     fail(CHECK, "CLAUDE.md does not exist")
 else:
     text = claude.read_text()
-    documented = set(re.findall(r"`((?:core|feature):[a-z]+|app)`", text))
+    documented = set(re.findall(r"`((?:core|feature):[a-z]+|core|app)`", text))
     missing = modules - documented
     # `feature:*` may stand in for every feature module
     if "`feature:*`" in text:
@@ -60,8 +60,13 @@ else:
     ok(CHECK)
 
 # -------------------------------------------------- 3. layering boundary
-CHECK = "feature modules do not import core:data/database/network"
-BANNED = re.compile(r"^import com\.finflow\.core\.(database|network|data)\.")
+# THE wall. `:core` is one module, so a feature's classpath carries the data layer and the
+# compiler will not stop an import of it — this check is the only thing that does.
+# See docs/adr/0008-single-core-module.md.
+CHECK = "feature modules do not import the data layer"
+BANNED = re.compile(
+    r"^import com\.finflow\.core\.(database|network|data|datastore|security|sync)\."
+)
 offenders = []
 for path in Path("feature").rglob("*.kt"):
     if "/build/" in str(path):
@@ -70,7 +75,9 @@ for path in Path("feature").rglob("*.kt"):
         if BANNED.match(line.strip()):
             offenders.append(f"{path}:{n}: {line.strip()}")
 if offenders:
-    fail(CHECK, "features may only see designsystem/ui/navigation/common/model/domain:\n      "
+    fail(CHECK, "a feature sees presentation only — reach for a use case in "
+                "com.finflow.core.domain instead (a preference is "
+                "ObserveCurrencyCodeUseCase, not a DataStore):\n      "
                 + "\n      ".join(offenders))
 else:
     ok(CHECK)
@@ -146,14 +153,17 @@ else:
 
 # ------------------------------------------------------ 7. room schemas
 CHECK = "Room version has a committed exported schema"
-db = Path("core/database/src/main/kotlin/com/finflow/core/database/FinFlowDatabase.kt")
-if db.exists():
+db = Path("core/src/main/kotlin/com/finflow/core/database/FinFlowDatabase.kt")
+if not db.exists():
+    # Fail rather than skip: this check used to silently pass when the path went stale.
+    fail(CHECK, f"{db} does not exist — repoint this check at FinFlowDatabase")
+else:
     m = re.search(r"^\s*version = (\d+),", db.read_text(), re.M)
     if not m:
         fail(CHECK, f"could not find `version = N` in {db}")
     else:
         v = int(m.group(1))
-        schemas = list(Path("core/database/schemas").glob(f"*/{v}.json"))
+        schemas = list(Path("core/schemas").glob(f"*/{v}.json"))
         if not schemas:
             fail(CHECK, f"FinFlowDatabase is at version {v} but no schemas/*/{v}.json is "
                         f"committed — build once to export it, then commit it")
