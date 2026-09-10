@@ -45,7 +45,7 @@ SUPABASE_ANON_KEY_QA=<qa publishable anon key>
 ```
 
 Recognised suffixes are `_DEV`, `_QA` and `_PROD`, matching the three flavors in `APP_SPEC.md`
-§30. Missing credentials are not a build failure — they resolve to `""`, so a fresh clone builds —
+§19. Missing credentials are not a build failure — they resolve to `""`, so a fresh clone builds —
 but `SupabaseModule` fails fast at injection time with a message naming the keys.
 
 **Never put the service-role key in the app.** Only the anon/publishable key ships; RLS is the

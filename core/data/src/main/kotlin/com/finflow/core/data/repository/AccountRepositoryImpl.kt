@@ -12,12 +12,12 @@ import com.finflow.core.data.sync.TableSyncRunner
 import com.finflow.core.database.datasource.AccountLocalDataSource
 import com.finflow.core.domain.repository.AccountRepository
 import com.finflow.core.model.Account
-import com.finflow.core.model.AccountBalance
+import com.finflow.core.model.AccountWithBalance
 import com.finflow.core.model.AccountDraft
 import com.finflow.core.model.SyncStatus
 import com.finflow.core.model.SyncTable
 import com.finflow.core.network.datasource.AccountRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,7 +32,7 @@ internal class AccountRepositoryImpl @Inject constructor(
     private val local: AccountLocalDataSource,
     private val remote: AccountRemoteDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val syncTrigger: SyncTrigger,
     private val clock: Clock,
 ) : AccountRepository, Syncable {
@@ -44,7 +44,7 @@ internal class AccountRepositoryImpl @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeAccountBalances(): Flow<List<AccountBalance>> =
+    override fun observeAccountBalances(): Flow<List<AccountWithBalance>> =
         currentUser.userIdFlow.flatMapLatest { userId ->
             if (userId == null) flowOf(emptyList()) else local.observeWithBalances(userId)
         }

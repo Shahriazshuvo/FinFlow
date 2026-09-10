@@ -31,7 +31,7 @@ import javax.inject.Singleton
  * store needs in order to remove a record another device deleted.
  *
  * Row-level security scopes every one of these queries to the signed-in user, so the
- * `user_id` filter is defence in depth rather than the security boundary (APP_SPEC.md §25).
+ * `user_id` filter is defence in depth rather than the security boundary (APP_SPEC.md §14).
  */
 
 internal object SupabaseTables {

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Base class for every feature ViewModel, giving the APP_SPEC.md §6 contract for free:
+ * Base class for every feature ViewModel, giving the APP_SPEC.md §7 contract for free:
  * one immutable [UiState] stream, one [UiIntent] entry point, and a buffered [UiEffect]
  * channel for one-shot events.
  *

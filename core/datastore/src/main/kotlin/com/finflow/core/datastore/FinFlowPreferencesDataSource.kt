@@ -2,11 +2,15 @@ package com.finflow.core.datastore
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.finflow.core.model.SyncTable
 import com.finflow.core.model.ThemePreference
+import com.finflow.core.model.TransactionFilter
+import com.finflow.core.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -30,6 +34,13 @@ class FinFlowPreferencesDataSource @Inject constructor(
                 ?: ThemePreference.SYSTEM,
             currencyCode = preferences[Keys.CURRENCY] ?: UserPreferences.DEFAULT_CURRENCY,
             userId = preferences[Keys.USER_ID],
+            onboardingCompleted = preferences[Keys.ONBOARDING_COMPLETED] ?: false,
+            lastTransactionFilter = TransactionFilter(
+                type = preferences[Keys.FILTER_TYPE]
+                    ?.let { runCatching { TransactionType.valueOf(it) }.getOrNull() },
+                categoryIds = preferences[Keys.FILTER_CATEGORY_IDS].orEmpty(),
+                accountIds = preferences[Keys.FILTER_ACCOUNT_IDS].orEmpty(),
+            ),
         )
     }
 
@@ -39,6 +50,27 @@ class FinFlowPreferencesDataSource @Inject constructor(
 
     suspend fun setCurrencyCode(currencyCode: String) {
         dataStore.edit { it[Keys.CURRENCY] = currencyCode }
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        dataStore.edit { it[Keys.ONBOARDING_COMPLETED] = completed }
+    }
+
+    /**
+     * Persists only the durable dimensions of [filter] — see [UserPreferences.lastTransactionFilter]
+     * for why the query and the date window are dropped rather than stored.
+     */
+    suspend fun setLastTransactionFilter(filter: TransactionFilter) {
+        dataStore.edit { preferences ->
+            val type = filter.type
+            if (type == null) {
+                preferences.remove(Keys.FILTER_TYPE)
+            } else {
+                preferences[Keys.FILTER_TYPE] = type.name
+            }
+            preferences[Keys.FILTER_CATEGORY_IDS] = filter.categoryIds
+            preferences[Keys.FILTER_ACCOUNT_IDS] = filter.accountIds
+        }
     }
 
     suspend fun setUserId(userId: String?) {
@@ -72,6 +104,10 @@ class FinFlowPreferencesDataSource @Inject constructor(
         val THEME = stringPreferencesKey("theme_preference")
         val CURRENCY = stringPreferencesKey("currency_code")
         val USER_ID = stringPreferencesKey("user_id")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val FILTER_TYPE = stringPreferencesKey("last_filter_type")
+        val FILTER_CATEGORY_IDS = stringSetPreferencesKey("last_filter_category_ids")
+        val FILTER_ACCOUNT_IDS = stringSetPreferencesKey("last_filter_account_ids")
 
         fun watermark(table: SyncTable) =
             longPreferencesKey("last_synced_at_${table.name.lowercase()}")

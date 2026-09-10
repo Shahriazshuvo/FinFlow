@@ -8,7 +8,7 @@ import java.math.BigDecimal
 /**
  * Wire shapes for the Supabase tables, matching `docs/supabase/schema.sql` column for
  * column. These stay `internal` to `core:network`: domain and UI never see a DTO
- * (APP_SPEC.md §5).
+ * (APP_SPEC.md §8).
  *
  * `type` values are lowercase to satisfy the Postgres check constraints, and money columns
  * are `numeric(12,2)` decoded as [BigDecimal] — never a floating point number.

@@ -5,7 +5,7 @@ import com.finflow.core.model.SyncStatus
 import java.time.Instant
 
 /**
- * Local-only replication bookkeeping, embedded in every syncable entity (APP_SPEC.md §11).
+ * Local-only replication bookkeeping, embedded in every syncable entity (APP_SPEC.md §12).
  * None of these columns exist in Supabase apart from `deletedAt`, which maps to the remote
  * `deleted_at` soft-delete column.
  */

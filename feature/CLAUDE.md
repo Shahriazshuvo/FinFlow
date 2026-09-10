@@ -1,7 +1,8 @@
 # feature:* — MVI presentation modules
 
-Covers all nine feature modules; they are identical in shape. Spec: `APP_SPEC.md` §27 (what a
-feature contains), §28 (how features share), §22 (MVI), plus the per-screen sections.
+Covers all nine feature modules; they are identical in shape. Spec: `APP_SPEC.md` §4 (what a
+feature contains), §3 and §6 (how features share without seeing each other), §7 (MVI), plus §13,
+the per-screen requirements.
 
 **A feature holds presentation and navigation only.** Repositories live in `core:data`, use cases
 in `core:domain`. Data is not UI-scoped — three screens read accounts — so no feature owns a

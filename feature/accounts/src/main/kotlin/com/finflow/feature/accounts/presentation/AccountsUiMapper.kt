@@ -1,7 +1,7 @@
 package com.finflow.feature.accounts.presentation
 
 import com.finflow.core.common.formatter.CurrencyFormatter
-import com.finflow.core.model.AccountBalance
+import com.finflow.core.model.AccountWithBalance
 import com.finflow.core.model.AccountType
 import com.finflow.core.model.Money
 import javax.inject.Inject
@@ -15,7 +15,7 @@ internal class AccountsUiMapper @Inject constructor(
 ) {
 
     fun toUiModels(
-        balances: List<AccountBalance>,
+        balances: List<AccountWithBalance>,
         currencyCode: String,
     ): List<AccountUiModel> = balances.map { item ->
         AccountUiModel(
@@ -29,7 +29,7 @@ internal class AccountsUiMapper @Inject constructor(
         )
     }
 
-    fun totalBalance(balances: List<AccountBalance>, currencyCode: String): String {
+    fun totalBalance(balances: List<AccountWithBalance>, currencyCode: String): String {
         val total = balances.fold(Money.ZERO) { acc, item -> acc + item.balance }
         return currencyFormatter.format(total, currencyCode)
     }

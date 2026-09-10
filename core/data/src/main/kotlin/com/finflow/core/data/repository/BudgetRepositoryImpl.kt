@@ -17,7 +17,7 @@ import com.finflow.core.model.BudgetUsage
 import com.finflow.core.model.SyncStatus
 import com.finflow.core.model.SyncTable
 import com.finflow.core.network.datasource.BudgetRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -33,7 +33,7 @@ internal class BudgetRepositoryImpl @Inject constructor(
     private val local: BudgetLocalDataSource,
     private val remote: BudgetRemoteDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val syncTrigger: SyncTrigger,
     private val clock: Clock,
 ) : BudgetRepository, Syncable {
@@ -62,7 +62,7 @@ internal class BudgetRepositoryImpl @Inject constructor(
         // month. Room's `@Upsert` would replace the existing row instead of failing, which
         // would look like a successful create and silently discard the earlier amount.
         if (local.hasMonthConflict(userId, draft.categoryId, draft.month, existing?.id)) {
-            return AppResult.Failure(AppError.Conflict(field = "category"))
+            return AppResult.Failure(AppError.Duplicate(field = "category"))
         }
 
         val budget = Budget(

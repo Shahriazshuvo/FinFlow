@@ -90,8 +90,9 @@ Two other deviations recorded while here:
 **§14 asks for the `monthly_income_expense` / `budget_usage` views** rather than duplicating
 aggregation on Android. `AnalyticsRepositoryImpl` aggregates from Room instead, because §16
 requires reads to work offline and a server-computed chart goes stale or blank without a network,
-and can disagree with the transaction list rendered beside it. `APP_SPEC.md` §18 already specifies
-Room; the views remain the server-side cross-check.
+and can disagree with the transaction list rendered beside it. `APP_SPEC.md` §13 permits exactly
+this — "unless offline analytics is explicitly needed" — and offline analytics is needed here; the
+views remain the server-side cross-check. See `docs/adr/0007-analytics-aggregated-from-room.md`.
 
 **§3 lists `core/security`, `core/navigation` and `core/di` as modules.** The first two now exist.
 There is no `core:di`: Hilt modules live beside the code they bind, which is what makes a binding

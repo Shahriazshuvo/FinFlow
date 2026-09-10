@@ -14,7 +14,7 @@ import com.finflow.core.model.Transaction
 import com.finflow.core.model.TransactionDraft
 import com.finflow.core.model.TransactionType
 import com.finflow.core.network.datasource.TransactionRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import com.finflow.core.testing.TEST_CLOCK
 import com.finflow.core.testing.TEST_INSTANT
 import com.finflow.core.testing.TEST_USER_ID
@@ -38,7 +38,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * The offline-first contract from APP_SPEC.md §12 and §21: a write lands in Room as pending
+ * The offline-first contract from APP_SPEC.md §12 and §18: a write lands in Room as pending
  * without touching the network, a successful sync flips it to SYNCED, and a failed sync
  * leaves it pending so nothing is ever lost.
  */
@@ -59,7 +59,7 @@ class TransactionRepositoryImplTest {
             local = local,
             remote = remote,
             currentUser = currentUser,
-            errorMapper = NetworkErrorMapper(),
+            errorMapper = DataErrorMapper(),
             syncTrigger = syncTrigger,
             clock = clock,
         )

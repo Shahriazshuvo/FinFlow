@@ -17,7 +17,7 @@ import com.finflow.core.model.Money
 import com.finflow.core.model.SyncStatus
 import com.finflow.core.model.SyncTable
 import com.finflow.core.network.datasource.GoalRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,7 +32,7 @@ internal class GoalRepositoryImpl @Inject constructor(
     private val local: GoalLocalDataSource,
     private val remote: GoalRemoteDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val syncTrigger: SyncTrigger,
     private val clock: Clock,
 ) : GoalRepository, Syncable {

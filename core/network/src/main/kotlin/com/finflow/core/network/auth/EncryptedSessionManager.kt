@@ -13,7 +13,7 @@ import javax.inject.Singleton
  *
  * The session carries a refresh token — a bearer credential that mints access tokens until it
  * is revoked — so it is the one piece of local state that genuinely warrants encryption at
- * rest (APP_SPEC.md §31). Everything else FinFlow stores locally is the user's own financial
+ * rest (APP_SPEC.md §14). Everything else FinFlow stores locally is the user's own financial
  * data, protected by the device lock and by RLS on the server.
  */
 @Singleton

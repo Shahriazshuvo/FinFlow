@@ -29,7 +29,7 @@ import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 
 /**
- * Every repository binding in the app (APP_SPEC.md §26).
+ * Every repository binding in the app (APP_SPEC.md §3).
  *
  * These live here rather than in the feature that shows the data, because data is not
  * UI-scoped: accounts are read by the accounts screen, the dashboard and the transaction

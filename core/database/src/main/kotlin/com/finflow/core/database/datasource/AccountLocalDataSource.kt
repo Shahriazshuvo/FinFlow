@@ -5,7 +5,7 @@ import com.finflow.core.database.entity.SyncMetadata
 import com.finflow.core.database.mapper.toDomain
 import com.finflow.core.database.mapper.toEntity
 import com.finflow.core.model.Account
-import com.finflow.core.model.AccountBalance
+import com.finflow.core.model.AccountWithBalance
 import com.finflow.core.model.Money
 import com.finflow.core.model.PendingRecord
 import com.finflow.core.model.SyncStatus
@@ -25,13 +25,13 @@ class AccountLocalDataSource @Inject constructor(
         dao.observeAll(userId).map { entities -> entities.map { it.toDomain() } }
 
     /** Accounts joined with the balance SQL computes from their transactions. */
-    fun observeWithBalances(userId: String): Flow<List<AccountBalance>> = combine(
+    fun observeWithBalances(userId: String): Flow<List<AccountWithBalance>> = combine(
         dao.observeAll(userId),
         dao.observeBalances(userId),
     ) { accounts, balances ->
         val balanceById = balances.associate { it.accountId to it.balanceMinor }
         accounts.map { entity ->
-            AccountBalance(
+            AccountWithBalance(
                 account = entity.toDomain(),
                 balance = Money(balanceById[entity.id] ?: entity.openingBalanceMinor),
             )

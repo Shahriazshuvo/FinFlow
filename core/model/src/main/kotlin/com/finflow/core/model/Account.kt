@@ -17,8 +17,14 @@ data class Account(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-/** An account together with the balance derived from its transactions. */
-data class AccountBalance(
+/**
+ * An account together with the balance derived from its transactions (APP_SPEC.md §11).
+ *
+ * The backend has no `current_balance` column and this type does not add one: the balance is
+ * `openingBalance + income - expense` over rows whose `deleted_at` is null, computed by
+ * `AccountDao` and never stored.
+ */
+data class AccountWithBalance(
     val account: Account,
     val balance: Money,
 )

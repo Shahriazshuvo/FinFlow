@@ -25,7 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * The MVI contract from APP_SPEC.md §6 as this screen implements it: intents reduce to
+ * The MVI contract from APP_SPEC.md §7 as this screen implements it: intents reduce to
  * state, failures surface as a message rather than a crash, and "the user is authenticated"
  * is decided in exactly one place — the session flow.
  */

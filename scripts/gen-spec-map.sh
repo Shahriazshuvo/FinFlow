@@ -60,14 +60,19 @@ for num, title, start, end in sections:
         f"| §{num} | {title} | {start}–{end} | {summaries.get(num, '')} | {cited} |"
     )
 
+# The header's own numbers are derived too, so this file cannot claim a line count
+# or an example range that APP_SPEC.md has since moved past.
+example = next((s for s in sections if s[0] == 12), sections[0])
+_, ex_title, ex_start, ex_end = example
+
 MAP.parent.mkdir(parents=True, exist_ok=True)
 MAP.write_text(f"""# APP_SPEC.md section map
 
-`APP_SPEC.md` is ~750 lines. **Do not read it whole.** Find the section you need below, then read
+`APP_SPEC.md` is {total} lines. **Do not read it whole.** Find the section you need below, then read
 only its line range:
 
 ```bash
-sed -n '329,364p' APP_SPEC.md    # §12, Offline-First Strategy
+sed -n '{ex_start},{ex_end}p' APP_SPEC.md    # §{example[0]}, {ex_title}
 ```
 
 The spec's section numbers are **frozen** — {len(cites)} sections are cited by number from KDoc in

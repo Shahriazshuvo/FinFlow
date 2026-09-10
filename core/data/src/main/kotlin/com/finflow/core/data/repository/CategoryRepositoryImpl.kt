@@ -17,7 +17,7 @@ import com.finflow.core.model.SyncStatus
 import com.finflow.core.model.SyncTable
 import com.finflow.core.model.TransactionType
 import com.finflow.core.network.datasource.CategoryRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,7 +32,7 @@ internal class CategoryRepositoryImpl @Inject constructor(
     private val local: CategoryLocalDataSource,
     private val remote: CategoryRemoteDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val syncTrigger: SyncTrigger,
     private val clock: Clock,
 ) : CategoryRepository, Syncable {
@@ -56,7 +56,7 @@ internal class CategoryRepositoryImpl @Inject constructor(
         // at the form, not silently accepted and then bounced hours later by the unique
         // index during sync.
         if (local.hasNameConflict(userId, draft.type, name, existing?.id)) {
-            return AppResult.Failure(AppError.Conflict(field = "name"))
+            return AppResult.Failure(AppError.Duplicate(field = "name"))
         }
 
         val category = Category(

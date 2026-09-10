@@ -14,7 +14,7 @@ import com.finflow.core.model.Profile
 import com.finflow.core.model.SyncStatus
 import com.finflow.core.model.SyncTable
 import com.finflow.core.network.datasource.ProfileRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -29,7 +29,7 @@ internal class ProfileRepositoryImpl @Inject constructor(
     private val remote: ProfileRemoteDataSource,
     private val preferences: FinFlowPreferencesDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val clock: Clock,
 ) : ProfileRepository, Syncable {
 

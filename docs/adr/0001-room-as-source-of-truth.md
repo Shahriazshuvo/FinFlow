@@ -5,7 +5,7 @@
 
 ## Context
 
-FinFlow is offline-first (`APP_SPEC.md` §12, §16). A personal-finance app is used on trains, in
+FinFlow is offline-first (`APP_SPEC.md` §8, §12). A personal-finance app is used on trains, in
 basements and on aeroplanes, and a user who records a coffee purchase expects it on screen
 whether or not Supabase is reachable.
 

@@ -68,7 +68,7 @@ interface TransactionDao {
     )
     fun observeRecent(userId: String, limit: Int): Flow<List<TransactionEntity>>
 
-    // --- Aggregates (APP_SPEC.md §18: analytics is computed from Room) ---
+    // --- Aggregates (APP_SPEC.md §13: analytics is computed from Room) ---
 
     @Query(
         """

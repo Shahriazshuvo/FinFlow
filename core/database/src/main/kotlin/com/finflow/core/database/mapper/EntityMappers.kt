@@ -20,7 +20,7 @@ import java.time.Instant
 
 /**
  * Entity <-> domain translation. These are `internal` on purpose: Room entities must not
- * escape `core:database` (APP_SPEC.md §5), so only the local data sources in this module
+ * escape `core:database` (APP_SPEC.md §8), so only the local data sources in this module
  * can use them.
  */
 

@@ -11,7 +11,7 @@ import org.gradle.kotlin.dsl.project
  * Deliberately wires only the presentation-facing core modules — a feature can never see
  * `core:database`, `core:network` or `core:data`, so it cannot inject a repository
  * implementation, touch a DAO or import a DTO. Features talk to use cases in `core:domain`;
- * that is the whole surface (APP_SPEC.md §26).
+ * that is the whole surface (APP_SPEC.md §3).
  *
  * Data lives in `core:data` rather than in the feature that displays it because data is not
  * UI-scoped: accounts are read by three different screens. See

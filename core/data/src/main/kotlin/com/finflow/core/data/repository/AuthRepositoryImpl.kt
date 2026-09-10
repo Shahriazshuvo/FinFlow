@@ -13,7 +13,7 @@ import com.finflow.core.domain.repository.AuthRepository
 import com.finflow.core.model.SessionState
 import com.finflow.core.model.UserSession
 import com.finflow.core.network.datasource.AuthRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 internal class AuthRepositoryImpl @Inject constructor(
     private val authRemote: AuthRemoteDataSource,
     private val preferences: FinFlowPreferencesDataSource,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val profileLocal: ProfileLocalDataSource,
     private val accountLocal: AccountLocalDataSource,
     private val categoryLocal: CategoryLocalDataSource,

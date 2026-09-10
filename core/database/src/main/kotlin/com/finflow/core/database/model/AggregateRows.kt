@@ -3,7 +3,7 @@ package com.finflow.core.database.model
 import androidx.room.ColumnInfo
 import com.finflow.core.model.TransactionType
 
-/** Projection rows returned by the aggregate DAO queries (APP_SPEC.md §18). */
+/** Projection rows returned by the aggregate DAO queries (APP_SPEC.md §13). */
 
 data class TypeTotalRow(
     @ColumnInfo(name = "type") val type: TransactionType,

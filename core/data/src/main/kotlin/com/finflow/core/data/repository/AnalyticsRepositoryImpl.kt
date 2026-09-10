@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 /**
  * Analytics are aggregated from Room rather than the Supabase views, so every chart works
- * offline and always agrees with the transaction list on screen (APP_SPEC.md §18). The
+ * offline and always agrees with the transaction list on screen (APP_SPEC.md §13). The
  * `monthly_income_expense` / `budget_usage` views remain the server-side cross-check.
  */
 @Singleton

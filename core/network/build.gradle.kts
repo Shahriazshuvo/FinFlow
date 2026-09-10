@@ -10,7 +10,7 @@ plugins {
 // Empty defaults keep a fresh clone buildable without any credentials.
 //
 // Only the anon/publishable key is ever read here. A service-role key must never reach the
-// client — RLS is the security boundary (APP_SPEC.md §30).
+// client — RLS is the security boundary (APP_SPEC.md §14), and no variant ships a secret (§19).
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }

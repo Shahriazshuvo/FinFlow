@@ -30,7 +30,7 @@ Hilt in these modules uses `hilt-core`, not `hilt-android`, for the same reason 
 - Anything genuinely Android-shaped that the domain needs must be expressed as an interface here
   and implemented in an Android module — `SyncTrigger` is the example.
 - `@Parcelize` is unavailable on domain models. Navigation passes IDs, not objects, which
-  `APP_SPEC.md` §20 wants anyway.
+  `APP_SPEC.md` §6 wants anyway.
 
 ## Alternatives considered
 

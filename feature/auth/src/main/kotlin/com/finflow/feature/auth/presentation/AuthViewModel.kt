@@ -99,6 +99,6 @@ class AuthViewModel @Inject constructor(
  */
 private fun AppError.toMessage(): String = when (this) {
     AppError.Unauthorized -> "That email and password do not match an account."
-    AppError.NetworkUnavailable -> "No connection. Check your network and try again."
+    AppError.Offline -> "No connection. Check your network and try again."
     else -> toUserMessage()
 }

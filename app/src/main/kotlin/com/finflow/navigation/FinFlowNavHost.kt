@@ -5,9 +5,12 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.navOptions
+import androidx.navigation.navigation
+import com.finflow.core.navigation.AuthGraphRouteKey
 import com.finflow.core.navigation.AuthRouteKey
 import com.finflow.core.navigation.DashboardRouteKey
-import com.finflow.core.navigation.navigateToDashboard
+import com.finflow.core.navigation.MainGraphRouteKey
+import com.finflow.core.navigation.navigateToMainGraph
 import com.finflow.feature.accounts.navigation.accountsScreen
 import com.finflow.feature.analytics.navigation.analyticsScreen
 import com.finflow.feature.auth.navigation.authScreen
@@ -18,6 +21,17 @@ import com.finflow.feature.goals.navigation.goalsScreen
 import com.finflow.feature.settings.navigation.settingsScreen
 import com.finflow.feature.transactions.navigation.transactionsScreen
 
+/**
+ * The root graph, with the two children APP_SPEC.md §6 specifies: an auth graph and a main
+ * graph. `:app` composes it, because only `:app` knows the full set of features (§5).
+ *
+ * The nesting is what makes the sign-in transition correct. Popping `AuthGraphRouteKey`
+ * inclusively removes the whole signed-out half of the stack in one operation, so back from
+ * the dashboard leaves the app rather than returning an authenticated user to a sign-in
+ * form. Popping a single auth *screen* would only work while the auth graph has one screen
+ * in it, which is exactly the kind of assumption that breaks the first time a "forgot
+ * password" destination is added.
+ */
 @Composable
 fun FinFlowNavHost(
     navController: NavHostController,
@@ -27,32 +41,35 @@ fun FinFlowNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = if (isAuthenticated) DashboardRouteKey else AuthRouteKey,
+        startDestination = if (isAuthenticated) MainGraphRouteKey else AuthGraphRouteKey,
         modifier = modifier,
     ) {
-        authScreen(
-            onSignedIn = {
-                // Auth is popped inclusively so back from the dashboard leaves the app
-                // rather than returning to a sign-in form for an authenticated user.
-                navController.navigateToDashboard(
-                    navOptions {
-                        popUpTo(AuthRouteKey) { inclusive = true }
-                        launchSingleTop = true
-                    },
-                )
-            },
-            onMessage = onMessage,
-        )
-        dashboardScreen()
-        transactionsScreen()
-        accountsScreen(onMessage = onMessage)
-        budgetsScreen()
-        goalsScreen()
-        analyticsScreen()
-        // Registered so the destination exists and its module stays wired, but not yet in the
-        // bottom bar — Categories and Goals get their entry points from Settings and the
-        // Dashboard once those screens are built.
-        categoriesScreen()
-        settingsScreen()
+        navigation<AuthGraphRouteKey>(startDestination = AuthRouteKey) {
+            authScreen(
+                onSignedIn = {
+                    navController.navigateToMainGraph(
+                        navOptions {
+                            popUpTo(AuthGraphRouteKey) { inclusive = true }
+                            launchSingleTop = true
+                        },
+                    )
+                },
+                onMessage = onMessage,
+            )
+        }
+
+        navigation<MainGraphRouteKey>(startDestination = DashboardRouteKey) {
+            dashboardScreen()
+            transactionsScreen()
+            accountsScreen(onMessage = onMessage)
+            budgetsScreen()
+            goalsScreen()
+            analyticsScreen()
+            // Registered so the destination exists and its module stays wired, but not yet in
+            // the bottom bar — Categories and Goals get their entry points from Settings and
+            // the Dashboard once those screens are built.
+            categoriesScreen()
+            settingsScreen()
+        }
     }
 }

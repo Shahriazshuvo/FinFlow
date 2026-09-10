@@ -4,7 +4,7 @@ import com.finflow.core.model.AccountType
 import com.finflow.core.ui.mvi.UiState
 
 /**
- * Accounts list plus the add/edit sheet (APP_SPEC.md §29).
+ * Accounts list plus the add/edit sheet (APP_SPEC.md §13).
  *
  * Balances arrive already formatted: `Money` does not cross into the screen, so the
  * composable has nothing to get wrong about currency or rounding.

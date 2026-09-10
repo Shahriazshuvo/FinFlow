@@ -19,7 +19,7 @@ import com.finflow.core.database.entity.ProfileEntity
 import com.finflow.core.database.entity.TransactionEntity
 
 /**
- * The single source of truth for all financial data (APP_SPEC.md §5). Schemas are exported
+ * The single source of truth for all financial data (APP_SPEC.md §8). Schemas are exported
  * to `core/database/schemas` and committed, so migrations can be diffed in review and
  * tested with `MigrationTestHelper`.
  */

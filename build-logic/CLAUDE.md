@@ -58,7 +58,7 @@ native only from API 26). Unit-test deps come free via `configureUnitTestDepende
 ## Build flavors
 
 `Flavors.kt` declares one dimension, `environment`, with `dev`, `qa` and `prod` (`APP_SPEC.md`
-§30). `dev` and `qa` take an `applicationIdSuffix` so all three install side by side, and carry
+§19). `dev` and `qa` take an `applicationIdSuffix` so all three install side by side, and carry
 `BuildConfig.DEBUG_LOGGING = true` — a non-production affordance, deliberately not tied to the
 debug build type.
 

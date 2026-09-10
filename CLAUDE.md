@@ -86,7 +86,7 @@ Read these **on demand**, not preemptively.
 | Any Compose UI — spacing, colors, components | `core/designsystem/CLAUDE.md` |
 | Sync, watermarks, tombstones, "why is this stale" | `core/data/CLAUDE.md` |
 | Room entity, column, DAO, database version | `core/database/CLAUDE.md` |
-| How two features share data, or navigate to each other | `APP_SPEC.md` §28, then `core/navigation/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
+| How two features share data, or navigate to each other | `APP_SPEC.md` §3 and §6, then `core/navigation/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
 | Gradle, AGP, convention plugins, version catalog | `build-logic/CLAUDE.md` |
 | Any SQL, RLS or Postgres | skill `supabase-postgres-best-practices`, then `docs/supabase/README.md` |
 | Why a decision was made | `docs/adr/` — index in `docs/README.md` |
@@ -99,14 +99,21 @@ in those trees.
 
 ## APP_SPEC.md
 
-`APP_SPEC.md` is ~640 lines of product intent — scope, per-screen requirements, phases, definition
-of done. **Do not read it whole.** Its section numbers are cited from KDoc in 19 source files, so
-they are frozen: never renumber, append new sections at the end. Use
-`docs/architecture/spec-map.md` to find the line range you need, then:
+`APP_SPEC.md` is ~775 lines of architecture intent — module structure, dependency rules, the MVI
+contract, per-feature requirements, security and money handling. **Do not read it whole.** Its 22
+section numbers are cited from KDoc in 28 source files, so they are frozen: never renumber, append
+new sections at the end. Use `docs/architecture/spec-map.md` to find the line range you need, then:
 
 ```bash
-sed -n '333,368p' APP_SPEC.md    # §12, Offline-First Strategy
+sed -n '362,395p' APP_SPEC.md    # §12, Sync Strategy
 ```
+
+**The spec was renumbered once,** in commit `960bf38`, from a 31-section product spec to the
+current 22-section architecture proposal. Every citation in the source was realigned to the new
+numbering afterwards — see `docs/adr/0007-analytics-aggregated-from-room.md` for the one place the
+new spec and the code deliberately disagree. If the spec is ever rewritten again, `§N` references
+in KDoc must be remapped in the same pass; `scripts/check-context.sh` catches only the citations
+that dangle, not the ones that silently land on the wrong section.
 
 ## Before you finish
 

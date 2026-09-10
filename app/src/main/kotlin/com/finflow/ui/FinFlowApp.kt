@@ -12,12 +12,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.finflow.core.designsystem.component.FinFlowBottomBar
 import com.finflow.core.designsystem.component.FinFlowBottomBarItem
+import com.finflow.core.navigation.DashboardRouteKey
 import com.finflow.navigation.FinFlowNavHost
 import com.finflow.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
@@ -74,10 +74,18 @@ private fun NavDestination?.matches(destination: TopLevelDestination): Boolean =
 private val NavDestination.hierarchy: Sequence<NavDestination>
     get() = generateSequence(this) { it.parent }
 
-/** Standard bottom-bar behaviour: single instance, state saved and restored per tab. */
+/**
+ * Standard bottom-bar behaviour: single instance, state saved and restored per tab.
+ *
+ * It pops to [DashboardRouteKey] by name rather than to the *root* graph's start
+ * destination. Those are the same destination only while the app happens to start signed in;
+ * when it starts on the auth graph they are not, and popping to a destination that is no
+ * longer on the stack silently loses per-tab state restoration. The main graph's start
+ * destination is the thing this actually means, so it says so.
+ */
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {
     navigate(destination.route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo(DashboardRouteKey) { saveState = true }
         launchSingleTop = true
         restoreState = true
     }

@@ -1,13 +1,13 @@
 # APP_SPEC.md section map
 
-`APP_SPEC.md` is ~750 lines. **Do not read it whole.** Find the section you need below, then read
+`APP_SPEC.md` is 776 lines. **Do not read it whole.** Find the section you need below, then read
 only its line range:
 
 ```bash
-sed -n '329,364p' APP_SPEC.md    # §12, Offline-First Strategy
+sed -n '362,395p' APP_SPEC.md    # §12, Sync Strategy
 ```
 
-The spec's section numbers are **frozen** — 13 sections are cited by number from KDoc in
+The spec's section numbers are **frozen** — 10 sections are cited by number from KDoc in
 the source (see the last column), so renumbering would orphan those references. Add new sections at
 the end; never renumber existing ones.
 
@@ -16,36 +16,27 @@ The Summary column is hand-written and preserved across regenerations; every oth
 
 | § | Title | Lines | Summary | Cited by |
 |---|---|---|---|---|
-| §1 | Project Summary | 3–8 | What FinFlow is, and the stack it is built on. | — |
-| §2 | Product Goals | 9–19 | The eight things the product must do. | — |
-| §3 | Non-Goals | 20–28 | Explicitly out of scope — read before proposing a feature. | — |
-| §4 | Target Tech Stack | 29–46 | Library-by-library technology choices. | — |
-| §5 | Architecture | 47–79 | **The layering contract.** Layer flow diagram + the ten core rules. | `Dtos.kt`, `EntityMappers.kt`, `FinFlowDatabase.kt` |
-| §6 | MVI Contract Pattern | 80–116 | Shape of State/Intent/Effect and what belongs in each. | `AuthViewModelTest.kt`, `MviViewModel.kt` |
-| §7 | Module Structure | 117–159 | The original 18-module list. Superseded by §26 — read that first. | — |
-| §8 | Feature Module Structure | 160–192 | File layout and naming for a feature module. | — |
-| §9 | Reusable UI and Common Functionality | 193–292 | When a widget belongs in `core:designsystem` rather than a feature. | — |
-| §10 | Backend Tables | 293–305 | Postgres table list. | — |
-| §11 | Domain Models | 306–337 | Domain model fields and the embedded sync metadata. | `SyncMetadata.kt` |
-| §12 | Offline-First Strategy | 338–373 | **Push-then-pull**, watermarks, tombstones, conflict resolution. | `RemoteRecord.kt`, `SyncWorker.kt`, `TableSyncRunner.kt`, `TransactionRepository.kt`, `TransactionRepositoryImplTest.kt` |
-| §13 | Authentication | 374–396 | Supabase Auth flow and session handling. | `AuthState.kt` |
-| §14 | Dashboard | 397–409 | Dashboard screen requirements. | `BudgetUseCases.kt` |
-| §15 | Transactions | 410–423 | Transactions screen requirements. | — |
-| §16 | Budgets | 424–436 | Budgets screen requirements. | — |
-| §17 | Goals | 437–449 | Goals screen requirements. | — |
-| §18 | Analytics | 450–461 | Analytics is computed from Room, not the server. Chart requirements. | `AggregateRows.kt`, `AnalyticsLocalDataSource.kt`, `AnalyticsRepositoryImpl.kt`, `TransactionDao.kt` |
-| §19 | Settings | 462–472 | Settings screen requirements. | — |
-| §20 | Error Handling | 473–492 | `AppResult`/`AppError` taxonomy and where mapping happens. | `AppError.kt`, `ErrorMessages.kt`, `NetworkErrorMapper.kt` |
-| §21 | Testing Strategy | 493–509 | What to test at each layer. | — |
-| §22 | Development Phases | 510–572 | Build order (phases 1–8) and the recommended commit sequence. | — |
-| §23 | AI-Native Development Workflow | 573–614 | Superseded — points at the context layer that replaced it. | — |
-| §24 | AI Prompts | 615–630 | Superseded — maps the old canned prompts to skills. | — |
-| §25 | Definition of Done | 631–646 | Ship checklist. | `TableRemoteDataSources.kt` |
-| §26 | Module Layout | 647–672 | The 23 modules, the allowed edges, and the two walls that are compile errors. | `AndroidFeatureConventionPlugin.kt`, `DataModule.kt`, `FinFlowRoutes.kt` |
-| §27 | Layer Ownership | 673–699 | **Where each layer lives.** Repositories in core:data, use cases in core:domain, features are presentation-only — and why. | — |
-| §28 | Feature Communication | 700–716 | How two features share without depending on each other: one data layer, and route keys in core:navigation. | — |
-| §29 | Accounts | 717–736 | Balance is derived, never stored. Screen requirements, soft delete, negative opening balances. | `AccountsState.kt` |
-| §30 | Build Variants | 737–768 | dev/qa/prod on the `environment` dimension, per-flavor Supabase credentials, renamed Gradle tasks. | `build.gradle.kts` |
-| §31 | Local Security | 769–799 | Keystore-backed encryption for the auth session, and what is deliberately *not* encrypted. | `EncryptedKeyValueStore.kt`, `EncryptedSessionManager.kt` |
+| §1 | Architecture Goal | 3–32 | What FinFlow is and the one-line shape of every layer. Also: no feature-local data/domain layers. | — |
+| §2 | Recommended Module Structure | 33–75 | The 23-module tree. Close to Now in Android, with stronger security/sync/money boundaries. | — |
+| §3 | Dependency Rules | 76–124 | **The layering contract.** Allowed edges, and the four modules a feature may never depend on — a compile error, not a review comment. | `AndroidFeatureConventionPlugin.kt`, `DataModule.kt` |
+| §4 | Feature Module Shape | 125–149 | File layout of a feature module: `navigation/` + `presentation/` with the MVI five, a UiMapper and `components/`. | — |
+| §5 | App Shell | 150–166 | What the `app` module owns: nav host, root theme, auth-aware routing, sync startup. | — |
+| §6 | Navigation | 167–206 | Root graph shape (AuthGraph/MainGraph), detail routes, and the rule that navigation passes ids, never domain objects. | `FinFlowNavHost.kt`, `FinFlowRoutes.kt` |
+| §7 | UDF / MVI Pattern | 207–245 | Shape of State/Intent/Effect and what belongs in each. State is durable, Effects are one-shot. | `AuthViewModelTest.kt`, `MviViewModel.kt` |
+| §8 | Data Architecture | 246–281 | **Room is the source of truth.** Read path, write-then-sync path, and the rule that UI never sees an entity or a DTO. | `Dtos.kt`, `EntityMappers.kt`, `FinFlowDatabase.kt` |
+| §9 | Supabase Mapping | 282–301 | Table-by-table map from the Postgres schema to Android models. Do not invent backend fields. | — |
+| §10 | Money Handling | 302–329 | `Money(minorUnits: Long)` everywhere; `numeric(12,2)` converted explicitly at the network boundary. | — |
+| §11 | Account Balance | 330–361 | Balance is **derived**, never stored: opening balance plus income minus expense, tombstones excluded. | `Account.kt` |
+| §12 | Sync Strategy | 362–395 | **Push-then-pull**, the four pending statuses, watermarks, tombstones, and local-pending-wins conflict policy. | `RemoteRecord.kt`, `SyncMetadata.kt`, `SyncWorker.kt`, `TableSyncRunner.kt`, `TransactionRepository.kt`, `TransactionRepositoryImplTest.kt` |
+| §13 | Feature Architecture | 396–536 | Per-feature requirements for all nine screens: auth, dashboard, accounts, transactions, categories, budgets, goals, analytics. | `AccountsState.kt`, `AggregateRows.kt`, `AnalyticsLocalDataSource.kt`, `AnalyticsRepositoryImpl.kt`, `AuthState.kt`, `BudgetUseCases.kt`, `TransactionDao.kt` |
+| §14 | Security Architecture | 537–558 | RLS is the security boundary; `user_id` filters are defence in depth. Anon key only, encrypted session, clear cache on logout. | `EncryptedKeyValueStore.kt`, `EncryptedSessionManager.kt`, `TableRemoteDataSources.kt`, `build.gradle.kts` |
+| §15 | Error Handling | 559–588 | The `AppError` taxonomy and the rule that repositories translate every raw exception into it. | `AppError.kt`, `DataErrorMapper.kt`, `ErrorMessages.kt` |
+| §16 | DataStore | 589–602 | DataStore holds preferences only — theme, currency, onboarding, last filters. Never relational finance data. | `PreferencesUseCases.kt`, `UserPreferences.kt`, `UserPreferencesRepository.kt` |
+| §17 | Design System | 603–633 | What belongs in `core:designsystem` versus `core:ui`, and when a feature component graduates. | — |
+| §18 | Testing Strategy | 634–681 | What to test at each layer: unit, Turbine flow tests, Compose UI, and the few real Supabase integration tests. | — |
+| §19 | Build Variants | 682–702 | dev/qa/prod on the `environment` dimension, per-flavor Supabase credentials, no service-role secret in any variant. | — |
+| §20 | Future AI Architecture | 703–738 | Future `feature:ai` — reaches data only through existing use cases, never Room or Supabase directly. | — |
+| §21 | Architectural Decisions | 739–760 | The decision table: one row per architectural choice with its reason. | — |
+| §22 | Final Recommendation | 761–776 | The one-paragraph summary of the whole architecture. | — |
 
-Total: 31 sections, 799 lines.
+Total: 22 sections, 776 lines.

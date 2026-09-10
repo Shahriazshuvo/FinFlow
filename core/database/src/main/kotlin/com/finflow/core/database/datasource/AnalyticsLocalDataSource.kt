@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Analytics are computed from Room (APP_SPEC.md §18), so the charts keep working offline
+ * Analytics are computed from Room (APP_SPEC.md §13), so the charts keep working offline
  * and stay consistent with whatever the transaction list is showing.
  */
 @Singleton

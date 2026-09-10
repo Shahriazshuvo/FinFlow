@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 /**
  * Small string store whose values are encrypted with a key that never leaves the device's
- * hardware-backed keystore (APP_SPEC.md §31).
+ * hardware-backed keystore (APP_SPEC.md §14).
  *
  * This exists because the auth refresh token is a bearer credential: anything holding it can
  * mint access tokens until it is revoked. Supabase's default session manager writes it to

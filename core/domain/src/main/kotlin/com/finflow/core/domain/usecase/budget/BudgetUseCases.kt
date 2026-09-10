@@ -23,7 +23,7 @@ class ObserveBudgetUsageUseCase @Inject constructor(
         repository.observeBudgetUsage(month)
 }
 
-/** Feeds the dashboard's "budget usage warning" card (APP_SPEC.md §14). */
+/** Feeds the dashboard's "budget usage warning" card (APP_SPEC.md §13). */
 class ObserveBudgetWarningsUseCase @Inject constructor(
     private val repository: BudgetRepository,
 ) {

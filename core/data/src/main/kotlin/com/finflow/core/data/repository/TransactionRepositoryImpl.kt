@@ -17,7 +17,7 @@ import com.finflow.core.model.Transaction
 import com.finflow.core.model.TransactionDraft
 import com.finflow.core.model.TransactionFilter
 import com.finflow.core.network.datasource.TransactionRemoteDataSource
-import com.finflow.core.network.error.NetworkErrorMapper
+import com.finflow.core.network.error.DataErrorMapper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,7 +32,7 @@ internal class TransactionRepositoryImpl @Inject constructor(
     private val local: TransactionLocalDataSource,
     private val remote: TransactionRemoteDataSource,
     private val currentUser: CurrentUserProvider,
-    private val errorMapper: NetworkErrorMapper,
+    private val errorMapper: DataErrorMapper,
     private val syncTrigger: SyncTrigger,
     private val clock: Clock,
 ) : TransactionRepository, Syncable {
