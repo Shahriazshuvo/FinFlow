@@ -16,7 +16,7 @@ accounts screen, the dashboard and the transaction form. See
 `docs/adr/0006-centralized-data-layer.md` and `APP_SPEC.md` §1 and §3.
 
 The densest correctness rules in the repo live here. Spec detail: `APP_SPEC.md` §12
-(`sed -n '362,395p' APP_SPEC.md`).
+(`sed -n '385,418p' APP_SPEC.md`).
 
 | Package | Role |
 |---|---|

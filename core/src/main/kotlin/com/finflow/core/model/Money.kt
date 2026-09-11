@@ -8,7 +8,7 @@ import kotlin.math.absoluteValue
  * A monetary amount held as integer minor units (cents, paisa, ...).
  *
  * Money is never represented as a floating point number anywhere in FinFlow: amounts are
- * `Long` in Room, `bigint` in Postgres, and this value class in the domain. That removes
+ * `Long` in Room, `numeric(12,2)` in Postgres, and this value class in the domain. That removes
  * rounding drift from every sum, budget comparison and analytics aggregate.
  *
  * The currency is a property of the account/profile, not of the amount, so it is not

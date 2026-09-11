@@ -114,13 +114,13 @@ files in those trees.
 
 ## APP_SPEC.md
 
-`APP_SPEC.md` is ~775 lines of architecture intent — module structure, dependency rules, the MVI
+`APP_SPEC.md` is ~861 lines of architecture intent — module structure, dependency rules, the MVI
 contract, per-feature requirements, security and money handling. **Do not read it whole.** Its 22
-section numbers are cited from KDoc in 28 source files, so they are frozen: never renumber, append
+section numbers are cited from KDoc in 34 source files, so they are frozen: never renumber, append
 new sections at the end. Use `docs/architecture/spec-map.md` to find the line range you need, then:
 
 ```bash
-sed -n '362,395p' APP_SPEC.md    # §12, Sync Strategy
+sed -n '385,418p' APP_SPEC.md    # §12, Sync Strategy
 ```
 
 **The spec was renumbered once,** in commit `960bf38`, from a 31-section product spec to the

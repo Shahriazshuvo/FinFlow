@@ -88,14 +88,14 @@ spec = Path("APP_SPEC.md").read_text().split("\n")
 existing = {int(m.group(1)) for m in
             (re.match(r"^## (\d+)\. ", l) for l in spec) if m}
 offenders = []
-for root in ("app", "core", "feature", "build-logic", "docs"):
+for root in ("app", "core", "local_db", "network", "service", "ui", "feature", "build-logic", "docs"):
     for path in Path(root).rglob("*"):
         if not path.is_file() or path.suffix not in (".kt", ".kts", ".sql"):
             continue
         if "/build/" in str(path):
             continue
         for n, line in enumerate(path.read_text().split("\n"), 1):
-            for cited in re.findall(r"APP_SPEC\.md §(\d+)", line):
+            for cited in re.findall(r"APP_SPEC\.md`? §(\d+)", line):
                 if int(cited) not in existing:
                     offenders.append(f"{path}:{n}: cites §{cited}, which does not exist")
 if offenders:

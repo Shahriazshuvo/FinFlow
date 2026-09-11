@@ -8,7 +8,7 @@ import org.gradle.api.Project
 const val FLAVOR_DIMENSION: String = "environment"
 
 /**
- * Build environments (`APP_SPEC.md` §30).
+ * Build environments (`APP_SPEC.md` §19).
  *
  * `dev` and `qa` install alongside `prod` via an application id suffix, so a tester can hold all
  * three on one device. Only `prod` keeps the plain application id.

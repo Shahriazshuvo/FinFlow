@@ -16,17 +16,22 @@ The architecture should be:
 The core idea:
 
 ```text
-app = application shell
+app       = application shell
 feature:* = screens and presentation logic
-core:domain = use cases and repository contracts
-core:data = repository implementations and sync coordination
-core:database = Room local source of truth
-core:network = Supabase remote data source
-core:sync = WorkManager background sync
-core:security = encrypted session and secure storage
+core      = domain models, repository contracts, use cases (pure JVM)
+local_db  = Room local source of truth
+network   = Supabase remote data source and encrypted session storage
+service   = repository implementations, sync coordination, preferences
+ui        = design system, MVI base classes, route keys
 ```
 
-FinFlow should not use feature-local data/domain layers by default. Shared business logic belongs in `core:domain`; shared data access belongs in `core:data`.
+Ownership, not layer count, decides the split. `service` is the only module that sees both
+`local_db` and `network`; neither of those knows the other exists.
+
+FinFlow should not use feature-local data/domain layers by default. Shared business logic belongs
+in `com.finflow.core.domain`; shared data access belongs in `service`.
+
+See `docs/adr/0009-module-ownership-boundaries.md` for why these lines fall where they do.
 
 ---
 
@@ -34,40 +39,32 @@ FinFlow should not use feature-local data/domain layers by default. Shared busin
 
 ```text
 FinFlow/
-├── app/
-│   ├── MainActivity
-│   ├── FinFlowApplication
-│   ├── ui/
-│   └── navigation/
+├── app/                     MainActivity, FinFlowApplication, ui/, navigation/
 │
-├── feature/
-│   ├── auth/
-│   ├── dashboard/
-│   ├── accounts/
-│   ├── transactions/
-│   ├── categories/
-│   ├── budgets/
-│   ├── goals/
-│   ├── analytics/
-│   └── settings/
+├── feature/                 auth, dashboard, accounts, transactions, categories,
+│                            budgets, goals, analytics, settings
 │
-├── core/
-│   ├── model/
-│   ├── common/
-│   ├── domain/
-│   ├── data/
-│   ├── database/
-│   ├── network/
-│   ├── datastore/
-│   ├── security/
-│   ├── sync/
-│   ├── navigation/
-│   ├── designsystem/
-│   ├── ui/
-│   └── testing/
+├── core/                    pure JVM — depends on nothing in the project
+│   ├── model/               domain models, Money, drafts, SyncStatus
+│   ├── common/              AppResult, AppError, dispatchers, formatters, validators, Clock
+│   ├── domain/              repository interfaces + use cases
+│   └── testing/             fixtures, TEST_CLOCK, model builders (:core:testing)
+│
+├── local_db/                Room database, entities, DAOs, local data sources, mappers
+│   └── schemas/             exported Room schemas, committed
+│
+├── network/                 Supabase client, DTOs, remote data sources, mappers
+│   └── security/            Keystore-backed encrypted session storage
+│
+├── service/                 repository implementations, sync engine, datastore
+│
+├── ui/                      designsystem/, ui/ (MVI base), navigation/ (route keys)
 │
 └── build-logic/
 ```
+
+Packages are `com.finflow.core.*` throughout; the module a file belongs to is its directory, not
+its package.
 
 This is close to Now in Android, but FinFlow needs stronger `security`, `sync`, and money-handling boundaries.
 
@@ -78,47 +75,41 @@ This is close to Now in Android, but FinFlow needs stronger `security`, `sync`, 
 Allowed dependencies:
 
 ```text
-app
- ↓
-feature:*
- ↓
-core:domain
-core:model
-core:common
-core:ui
-core:designsystem
-core:navigation
-```
+app ──▶ service, ui, core, feature:*
 
-Data-side dependencies:
+feature:* ──▶ core, ui            (+ core:testing on testImplementation)
 
-```text
-core:data
- ↓
-core:domain
-core:database
-core:network
-core:datastore
-core:common
-core:model
+service ──▶ local_db, network, core
 
-core:sync
- ↓
-core:data
-core:datastore
-core:common
+local_db ──▶ core     network ──▶ core     ui ──▶ core
+
+core ──▶ nothing
 ```
 
 Feature modules must not depend on:
 
 ```text
-core:data
-core:database
-core:network
-core:sync
+service
+local_db
+network
 ```
 
 This makes architecture violations compile-time visible. ViewModels call use cases only.
+
+Four walls hold it up:
+
+1. **Features cannot reach the data layer.** `AndroidFeatureConventionPlugin` wires exactly
+   `core` and `ui`; a DAO, DTO or repository implementation is an unresolved reference.
+2. **The domain layer has no framework.** `core` is a pure JVM module, so the Android SDK, Room,
+   Supabase and Compose are not on its classpath at all.
+3. **Room and wire types never escape.** Entities, DAOs and projection rows are `internal` to
+   `local_db`; DTOs and their mappers are `internal` to `network`. The data sources are the public
+   boundary and return domain models.
+4. **`service` has no UI.** It does not depend on `ui`, so Compose is off the sync engine's
+   classpath.
+
+Features never depend on `service`: they need repository *interfaces*, which live in `core`, and
+the *implementations* are bound by Hilt at the `app` composition root.
 
 ---
 
@@ -126,24 +117,37 @@ This makes architecture violations compile-time visible. ViewModels call use cas
 
 Each feature should be presentation-focused:
 
+Each role gets its own package:
+
 ```text
 feature/transactions/
 ├── navigation/
 │   └── TransactionsNavigation.kt
 └── presentation/
-    ├── TransactionsRoute.kt
-    ├── TransactionsScreen.kt
-    ├── TransactionsViewModel.kt
-    ├── TransactionsState.kt
-    ├── TransactionsIntent.kt
-    ├── TransactionsEffect.kt
-    ├── TransactionsUiMapper.kt
+    ├── TransactionsRoute.kt          stateful entry point — stays at the root
+    ├── screen/
+    │   └── TransactionsScreen.kt     stateless, internal, @Preview
+    ├── viewmodel/
+    │   └── TransactionsViewModel.kt  @HiltViewModel, internal
+    ├── contract/
+    │   ├── TransactionsState.kt
+    │   ├── TransactionsIntent.kt
+    │   └── TransactionsEffect.kt
+    ├── mapper/
+    │   └── TransactionsUiMapper.kt
     └── components/
 ```
 
+`XRoute.kt` stays at the presentation root on purpose: it is the one file that touches all four
+packages, so it belongs above them rather than inside any one. `contract/` must not import from
+`viewmodel/` — a KDoc link to the ViewModel is written fully qualified so the arrow does not point
+backwards. Tests mirror the package of what they test.
+
+Check 10 of `scripts/check-context.sh` fails if a presentation file is left at the root.
+
 Use the same shape for accounts, budgets, goals, analytics, dashboard, categories, auth, and settings.
 
-Do not create `data/` and `domain/` folders inside every feature unless a feature has genuinely private business logic. For this app, centralized `core:domain` and `core:data` are cleaner.
+Do not create `data/` and `domain/` folders inside every feature unless a feature has genuinely private business logic. For this app, centralized `core` and `service` are cleaner.
 
 ---
 
@@ -161,6 +165,13 @@ The `app` module owns:
 - Sync startup wiring
 
 The app module may depend on every feature module so it can register navigation destinations.
+It also depends on `service`, purely so Hilt can see the repository bindings; no app code calls
+into it directly.
+
+> **Not yet built — auth-aware routing.** `app/src/main/kotlin/com/finflow/ui/FinFlowApp.kt`
+> hardcodes `isAuthenticated = true`, so the app always cold-starts in the main graph regardless
+> of session state. The session flow that would drive it already exists
+> (`AuthViewModel` observes it); only the wiring at the shell is missing.
 
 ---
 
@@ -173,17 +184,22 @@ Recommended root graph:
 ```text
 Root
 ├── AuthGraph
-│   ├── Login
-│   └── Signup
+│   └── Login/Signup          one screen, not two — see below
 └── MainGraph
     ├── Dashboard
     ├── Transactions
     ├── Accounts
+    ├── Categories
     ├── Budgets
     ├── Goals
     ├── Analytics
     └── Settings
 ```
+
+Two deliberate departures from the sketch above as it was first drawn: the auth graph holds a
+**single** Login/Signup destination, because §13 specifies one screen serving both modes and
+`AuthState.mode` switches between them; and **Categories** is a live destination, though it is
+not in the bottom bar.
 
 Navigation rules:
 
@@ -201,6 +217,13 @@ accounts/{accountId}
 budgets/{budgetId}
 goals/{goalId}
 ```
+
+These are modelled as `@Serializable` route keys (`TransactionDetailRouteKey` and friends) rather
+than string paths, with `navigateTo*Detail` helpers alongside them.
+
+> **Not yet built — detail destinations.** All four keys and their navigation helpers exist, but
+> no feature registers a `composable<XDetailRouteKey>` for them, so none is reachable yet. A key
+> becomes a live destination the moment its owning feature registers it.
 
 ---
 
@@ -323,7 +346,7 @@ Rules:
 - Domain uses `Money`.
 - Room stores integer minor units.
 - Supabase DTO maps `numeric(12,2)` to/from `Money`.
-- Formatting belongs in `core:common`.
+- Formatting belongs in `com.finflow.core.common.formatter`.
 
 ---
 
@@ -419,6 +442,11 @@ Signup success
  → navigate to Main
 ```
 
+> **Not yet built — the initial sync trigger.** Session restore and navigation both work; the sync
+> step does not happen. `RequestSyncUseCase` exists but has no callers. Today a fresh signup has
+> no data until the first local write fires `SyncTrigger`, or until the 6-hour periodic
+> `SyncWorker` run scheduled at app start.
+
 ### Dashboard
 
 Dashboard is orchestration only.
@@ -473,6 +501,12 @@ Transactions must validate:
 - Category exists
 - Category type matches transaction type when possible
 
+> **Not yet built — none of these four are enforced.** `feature:transactions` is still an
+> `EmptyState` stub with no ViewModel, and neither `SaveTransactionUseCase` nor the repository
+> checks any of them. `AmountValidator` exists in `com.finflow.core.common.validation` but has no
+> call site on this path. Validation belongs behind the use case when the screen is built, so
+> every entry point enforces the same rules.
+
 ### Categories
 
 Responsibilities:
@@ -522,7 +556,16 @@ Add it only if the product needs contribution history/auditability.
 
 ### Analytics
 
-Use backend views:
+Android should not duplicate the backend aggregations unless offline analytics is explicitly
+needed.
+
+**It is needed, so Android does duplicate them.** Analytics are aggregated from Room, not read
+from the Supabase views. Reads must work offline like every other screen (§8), and a chart that
+disagreed with the transaction list on the same device would be worse than no chart. This is the
+escape hatch the paragraph above names, taken deliberately:
+`docs/adr/0007-analytics-aggregated-from-room.md`.
+
+The three backend views still exist and remain the reference definition:
 
 ```text
 monthly_income_expense
@@ -530,7 +573,10 @@ monthly_category_spending
 budget_usage
 ```
 
-Android should not duplicate these aggregations unless offline analytics is explicitly needed.
+The Room aggregate queries in `TransactionDao` mirror them, and their projection rows in
+`local_db` are named after them. **When a view definition changes in
+`docs/supabase/schema.sql`, the matching Room query must change in the same commit** — nothing
+mechanical enforces that agreement.
 
 ---
 
@@ -558,12 +604,13 @@ Rules:
 
 ## 15. Error Handling
 
-Use shared error types in `core:common`.
+Use shared error types in `com.finflow.core.common.error`.
 
-Recommended categories:
+Categories:
 
 ```text
 Unauthorized
+Forbidden
 Network
 Offline
 Validation
@@ -573,16 +620,24 @@ Database
 Unknown
 ```
 
+`Forbidden` is separate from `Unauthorized` on purpose: an RLS policy refusing a row is not a
+session problem, so signing in again would not help, and in a fintech app it is worth noticing
+rather than retrying. §14 requires that distinction.
+
 Repositories should map raw Supabase/Room exceptions into domain-safe errors. UI should receive user-friendly messages through UI mappers.
 
 Examples:
 
 ```text
-category duplicate index → "Category already exists."
-budget duplicate index → "Budget already exists for this month."
-RLS denied → "You do not have permission or your session expired."
-network unavailable → "You're offline. Changes will sync later."
+category duplicate index → Duplicate("name")   → "Category already exists."
+budget duplicate index   → Duplicate("category") → "Budget already exists for this month."
+RLS denied (42501)       → Forbidden           → "You do not have permission to do that."
+network unavailable      → Offline             → "You're offline. Changes will sync later."
+expired session          → Unauthorized        → "Your session expired. Please sign in again."
 ```
+
+`Duplicate` carries the form field the message attaches to, so the screen can mark the offending
+input rather than raising a snackbar the user cannot act on.
 
 ---
 
@@ -593,8 +648,17 @@ Use DataStore for lightweight app preferences only:
 - Theme
 - Currency display preference
 - Onboarding completion
-- Last selected filters
-- Sync watermarks if not stored in Room
+- Last selected transaction filters
+- Sync watermarks
+- The signed-in user id
+
+Sync watermarks live here rather than in Room: they are per-table replication bookkeeping, not
+finance data, and keeping them out of the database means a sync failure cannot corrupt a
+transaction.
+
+"Last selected filters" persists only the type, category ids and account ids. The search query
+and the date range are deliberately dropped — restoring a stale search box or a date window the
+user has forgotten setting is worse than starting clean.
 
 Do not store relational finance data in DataStore.
 
@@ -602,12 +666,15 @@ Do not store relational finance data in DataStore.
 
 ## 17. Design System
 
-Use `core:designsystem` for:
+Both of these live in the `ui` module, as the `designsystem/` and `ui/` packages.
+
+Use `com.finflow.core.designsystem` for:
 
 - Theme
 - Colors
 - Typography
-- Shapes
+- Shapes  *(not yet built — `Theme.kt` passes only `colorScheme`, `typography` and `content`, so
+  M3 defaults apply)*
 - Spacing
 - Buttons
 - Text fields
@@ -620,12 +687,22 @@ Use `core:designsystem` for:
 - Financial amount display
 - Progress components
 
-Use `core:ui` for:
+Use `com.finflow.core.ui` for:
 
 - MVI base helpers
 - Effect collection
 - UI error message mapping
 - Shared Compose utilities
+
+Route keys live in the same module, under `com.finflow.core.navigation`, so one feature can
+navigate to another without depending on it.
+
+Literal `dp`, alpha and duration values are legal **only** inside `designsystem/theme/`;
+everywhere else they are a bug that check 2 of `scripts/check-context.sh` fails on. Read them as
+`FinFlowTheme.dimens` / `.spacing` / `.alphas`.
+
+> **Built but unwired:** `SyncStatusChip` and `ObserveSyncStatusUseCase` both exist and have no
+> call sites. The sync status they render is available; no screen shows it yet.
 
 Keep feature-specific components inside feature modules until reused by multiple features.
 
@@ -693,10 +770,17 @@ Each environment should have:
 
 - Different application ID suffix for dev/qa
 - Separate Supabase URL/key if needed
-- Debug logging enabled only for debug/dev
+- Debug logging disabled for prod
 - Release minification eventually enabled
 
 Never include service-role secrets in any variant.
+
+`BuildConfig.DEBUG_LOGGING` is **flavor**-scoped, not build-type-scoped: it is true for `dev` and
+`qa` and false for `prod`. A release `qa` build therefore has it on, which is the point — QA
+testers run release builds and still need logs. It is deliberately not tied to `debuggable`.
+
+> **Built but unwired:** nothing reads `DEBUG_LOGGING` yet. `SyncWorker` currently logs
+> unconditionally through `android.util.Log`.
 
 ---
 
@@ -743,8 +827,9 @@ Keep AI behind domain abstractions so providers can change later.
 | UI | Jetpack Compose | Modern Android UI |
 | Architecture | Now in Android-style modular architecture | Scales without overcomplicating |
 | Feature modules | Presentation-focused | Prevents duplicated domain/data layers |
-| Domain | Central `core:domain` | Shared use cases and contracts |
-| Data | Central `core:data` | Repository implementations and sync coordination |
+| Domain | Central `core` (pure JVM) | Shared use cases and contracts, framework-free |
+| Data | Central `service` | Repository implementations and sync coordination |
+| Module split | By ownership: `core`/`local_db`/`network`/`service`/`ui` | Each wall is a compile error |
 | Local DB | Room | Local source of truth |
 | Backend | Supabase | Auth, Postgres, RLS, analytics views |
 | State | UDF/MVI | Predictable screen behavior |
@@ -764,11 +849,11 @@ FinFlow should use:
 
 ```text
 Now in Android modular style
-+ Clean Architecture boundaries
++ Clean Architecture boundaries enforced by the compiler
 + Room-first offline source of truth
-+ Supabase-backed sync
++ Supabase-backed background sync
 + feature-owned presentation
-+ core-owned domain/data
++ core-owned domain, service-owned data
 + strong security and money handling
 ```
 

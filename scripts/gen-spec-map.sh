@@ -33,16 +33,16 @@ for idx, (num, title, start) in enumerate(heads):
 # --- citations: every "APP_SPEC.md §N" in tracked source
 cites = {}
 out = subprocess.run(
-    ["grep", "-rEn", r"APP_SPEC\.md §[0-9]+",
+    ["grep", "-rEn", r"APP_SPEC\.md`? §[0-9]+",
      "--include=*.kt", "--include=*.kts", "--include=*.sql",
-     "app", "core", "feature", "build-logic", "docs"],
+     "app", "core", "local_db", "network", "service", "ui", "feature", "build-logic", "docs"],
     capture_output=True, text=True,
 ).stdout
 for row in out.split("\n"):
     if not row.strip():
         continue
     path = row.split(":", 1)[0]
-    for n in re.findall(r"APP_SPEC\.md §(\d+)", row):
+    for n in re.findall(r"APP_SPEC\.md`? §(\d+)", row):
         cites.setdefault(int(n), set()).add(Path(path).name)
 
 # --- carry over hand-written summaries from the existing map
