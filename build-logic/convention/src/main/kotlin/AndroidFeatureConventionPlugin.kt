@@ -14,12 +14,15 @@ import org.gradle.kotlin.dsl.project
  * UI-scoped — accounts are read by three different screens. See
  * `docs/adr/0006-centralized-data-layer.md`.
  *
- * **That rule is no longer a compile error.** `:core` is one module, so a feature's classpath
- * carries the DAOs, DTOs and repository implementations along with the use cases; this plugin
- * has nothing to withhold. The boundary is enforced instead by check 3 of
- * `scripts/check-context.sh`, which fails on an import of `com.finflow.core.data`, `.database`,
- * `.network`, `.datastore`, `.security` or `.sync` from anywhere under `feature/`. Run it
- * before you finish. Background: `docs/adr/0008-single-core-module.md`.
+ * Wires exactly two modules: `:core` for use cases and domain contracts, `:ui` for the design
+ * system, the MVI base classes and the route keys. **`:service`, `:local_db` and `:network` are
+ * deliberately absent**, so a feature cannot inject a repository implementation, touch a DAO or
+ * import a DTO — the classpath makes it a compile error, and check 3 of
+ * `scripts/check-context.sh` catches it earlier with a better message.
+ *
+ * Repository *implementations* are bound by Hilt at the `:app` composition root, which is why a
+ * feature never needs `:service` on its own classpath.
+ * Background: `docs/adr/0009-module-ownership-boundaries.md`.
  */
 class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -32,6 +35,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
 
             dependencies {
                 add("implementation", project(":core"))
+                add("implementation", project(":ui"))
 
                 add("implementation", libs.lib("androidx-core-ktx"))
                 add("implementation", libs.lib("androidx-lifecycle-runtime-ktx"))

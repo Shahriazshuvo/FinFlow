@@ -1,7 +1,7 @@
 # FinFlow — agent context
 
 Offline-first Android personal-finance app. Kotlin · Compose · Material 3 · Clean Architecture +
-MVI · Hilt · Room · Supabase · WorkManager. 12 Gradle modules.
+MVI · Hilt · Room · Supabase · WorkManager. 16 Gradle modules.
 
 **Current state:** the data layer is complete and centralised — every repository, use case and
 sync path exists and is wired. Presentation is built for `feature:auth` and `feature:accounts`;
@@ -13,29 +13,41 @@ is **presentation-only work**: the use cases they need already exist in `com.fin
 | Module | Type | Responsibility |
 |---|---|---|
 | `app` | app | Nav host, Hilt root, `MainActivity`, theme wiring |
-| `core` | Android | Everything below presentation, as twelve packages — see the table in `core/CLAUDE.md` |
-| `core:testing` | Android | `MainDispatcherRule`, fixed clock, domain-model builders |
+| `core` | **JVM** | Domain models, `Money`, repository interfaces, use cases, `AppResult`, validators, `Clock` |
+| `core:testing` | **JVM** | `MainDispatcherRule`, fixed clock, domain-model builders |
+| `local_db` | Android | Room database, entities, DAOs, local data sources, entity↔domain mapping |
+| `network` | Android | Supabase client, DTOs, remote data sources, DTO↔domain mapping, Keystore session store |
+| `service` | Android | Repository implementations, the sync engine, WorkManager, preferences |
+| `ui` | Android | Design system, `MviViewModel` base, `@Serializable` route keys |
 | `feature:*` | Android | auth, dashboard, transactions, accounts, categories, budgets, goals, analytics, settings — **presentation only** |
 
-`:core` is one module holding `model`, `common`, `domain`, `database`, `network`, `datastore`,
-`data`, `sync`, `security`, `designsystem`, `ui` and `navigation` as packages under
-`com.finflow.core.*`. It was twelve modules until
-`docs/adr/0008-single-core-module.md`; that ADR is the place to start if you are wondering why
-a layering rule below is a script check rather than a compile error.
+```
+app ──▶ service, ui, feature:*, core
+feature:* ──▶ core, ui
+service ──▶ local_db, network, core
+local_db ──▶ core        network ──▶ core        ui ──▶ core
+```
+
+Packages still read `com.finflow.core.*` — the module split moved directories, not packages.
+`docs/adr/0009-module-ownership-boundaries.md` explains the ownership lines.
 
 ## Hard rules
 
 Violating any of these breaks the build or the architecture.
 
-- **`feature:*` holds presentation only.** It may use `com.finflow.core.` `designsystem`, `ui`,
-  `navigation`, `common`, `model` and `domain`, and never `data`, `database`, `network`,
-  `datastore`, `security` or `sync`. Since `:core` is one module the compiler will not stop you —
-  **check 3 of `scripts/check-context.sh` is the only guard, so run it before you finish.**
-  Features never see each other either; they share through use cases and through route keys in
-  `com.finflow.core.navigation`.
-- **DTOs never leave `core/network/`, entities never leave `core/database/`.** Both are
-  `internal` to `:core` as a whole, so nothing inside `:core` enforces this any more.
-- **Data is not UI-scoped.** Repositories live in `com.finflow.core.data`, not in the feature
+- **`feature:*` holds presentation only.** Its classpath is `:core` and `:ui` and nothing else,
+  so importing a DAO, a DTO or a repository implementation does not compile. Repository
+  *implementations* are bound by Hilt at the `:app` composition root, which is why a feature
+  never needs `:service`. Features never see each other either; they share through use cases and
+  through route keys in `com.finflow.core.navigation`.
+- **DTOs never leave `:network`, Room entities and DAOs never leave `:local_db`.** Both are
+  `internal`, and now that these are real modules that is a compile-time fact. Check 11 of
+  `scripts/check-context.sh` fails if one is made public.
+- **`:core` is pure JVM.** No Android, Room, Supabase or Compose on its classpath — an
+  `androidx.*` import in the domain layer is a compile error.
+- **`:service` never depends on Compose.** It is the only module that sees both `:local_db` and
+  `:network`; keep UI out of it.
+- **Data is not UI-scoped.** Repository implementations live in `:service`, not in the feature
   that displays them — three screens read accounts. See `docs/adr/0006-centralized-data-layer.md`.
 - **No literal dp, alpha or duration outside the design system's `theme/` package.** They live in
   `Dimens.kt` and `Spacing.kt` and are read as `FinFlowTheme.dimens` / `.spacing` / `.alphas`.
@@ -62,18 +74,19 @@ Violating any of these breaks the build or the architecture.
   `gradle/libs.versions.toml` before bumping anything. `supabase` 3.7.0+ needs Kotlin 2.4.x.
 - **KSP must track the Kotlin version's semver line.**
 - JDK 17. Core-library desugaring is mandatory — `java.time` is native only from API 26.
-- Room is at `version = 1` with schemas exported to `core/schemas` and committed.
+- Room is at `version = 1` with schemas exported to `local_db/schemas` and committed.
 
 ## Commands
 
 ```bash
 ./gradlew :app:assembleDevDebug  # whole module graph — variants are dev/qa/prod × debug/release
-./gradlew testDevDebugUnitTest   # every unit test (plain `testDebugUnitTest` is ambiguous)
+./gradlew test                   # JVM unit tests (:core, :core:testing)
+./gradlew testDevDebugUnitTest   # Android unit tests (plain `testDebugUnitTest` is ambiguous)
 bash scripts/check-context.sh    # context-layer invariants — run before you finish
 ```
 
-`:core` is an Android module, so **all** unit tests run under `testDevDebugUnitTest`. Plain
-`./gradlew test` no longer runs anything useful — nothing is a JVM module any more.
+`:core` is pure JVM again, so its tests run under `test` and the Android modules' under
+`testDevDebugUnitTest`. Run both.
 
 ## Where to look
 
@@ -83,16 +96,21 @@ Read these **on demand**, not preemptively.
 |---|---|
 | Building a feature screen, ViewModel, Contract | `feature/CLAUDE.md`, then `feature:accounts` as the worked example |
 | Writing a test — fakes, fixed clock, model builders | `core/testing/src/main/kotlin/com/finflow/core/testing/` |
-| Anything inside `:core` — Compose UI, sync, Room, the package walls | `core/CLAUDE.md` |
-| How two features share data, or navigate to each other | `APP_SPEC.md` §3 and §6, then `core/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
+| Repositories, sync, watermarks, "why is this stale" | `service/CLAUDE.md` |
+| Room entity, column, DAO, database version | `local_db/CLAUDE.md` |
+| Supabase, DTOs, remote data sources, error mapping | `network/CLAUDE.md` |
+| Any Compose UI — spacing, colors, components, MVI base | `ui/CLAUDE.md` |
+| Domain models, use cases, `Money`, `AppResult` | `core/CLAUDE.md` |
+| How two features share data, or navigate to each other | `APP_SPEC.md` §3 and §6, then `ui/src/main/kotlin/com/finflow/core/navigation/FinFlowRoutes.kt` |
 | Gradle, AGP, convention plugins, version catalog | `build-logic/CLAUDE.md` |
 | Any SQL, RLS or Postgres | skill `supabase-postgres-best-practices`, then `docs/supabase/README.md` |
 | Why a decision was made | `docs/adr/` — index in `docs/README.md` |
 | A detail from the spec | `docs/architecture/spec-map.md` — then read **only** that line range |
 | Module dependency edges and where each wall is enforced | `docs/architecture/module-graph.md` |
 
-`feature/CLAUDE.md`, `core/CLAUDE.md` and `build-logic/CLAUDE.md` load automatically when you
-edit files in those trees.
+`feature/CLAUDE.md`, `core/CLAUDE.md`, `local_db/CLAUDE.md`, `network/CLAUDE.md`,
+`service/CLAUDE.md`, `ui/CLAUDE.md` and `build-logic/CLAUDE.md` load automatically when you edit
+files in those trees.
 
 ## APP_SPEC.md
 
@@ -114,10 +132,10 @@ that dangle, not the ones that silently land on the wrong section.
 
 ## Before you finish
 
-- `bash scripts/check-context.sh && ./gradlew testDevDebugUnitTest`
-- Touched anything under `feature/` → check-context is the **only** thing standing between you
-  and an import of the data layer. It is not optional any more.
+- `bash scripts/check-context.sh && ./gradlew test testDevDebugUnitTest`
+- Made a Room or DTO type `public` → don't. Check 11 fails, and the module boundary is the
+  only reason `feature:*` cannot see them.
 - Added or renamed a module → update the table above and `docs/architecture/module-graph.md`
-- Bumped the Room version → migration + the new `N.json` committed under `core/schemas` + a
+- Bumped the Room version → migration + the new `N.json` committed under `local_db/schemas` + a
   migration test
 - Made an architectural decision → add `docs/adr/NNNN-*.md`

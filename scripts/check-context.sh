@@ -30,7 +30,7 @@ if not claude.exists():
     fail(CHECK, "CLAUDE.md does not exist")
 else:
     text = claude.read_text()
-    documented = set(re.findall(r"`((?:core|feature):[a-z]+|core|app)`", text))
+    documented = set(re.findall(r"`((?:core|feature):[a-z]+|[a-z_]+)`", text))
     missing = modules - documented
     # `feature:*` may stand in for every feature module
     if "`feature:*`" in text:
@@ -153,7 +153,7 @@ else:
 
 # ------------------------------------------------------ 7. room schemas
 CHECK = "Room version has a committed exported schema"
-db = Path("core/src/main/kotlin/com/finflow/core/database/FinFlowDatabase.kt")
+db = Path("local_db/src/main/kotlin/com/finflow/core/database/FinFlowDatabase.kt")
 if not db.exists():
     # Fail rather than skip: this check used to silently pass when the path went stale.
     fail(CHECK, f"{db} does not exist — repoint this check at FinFlowDatabase")
@@ -163,7 +163,7 @@ else:
         fail(CHECK, f"could not find `version = N` in {db}")
     else:
         v = int(m.group(1))
-        schemas = list(Path("core/schemas").glob(f"*/{v}.json"))
+        schemas = list(Path("local_db/schemas").glob(f"*/{v}.json"))
         if not schemas:
             fail(CHECK, f"FinFlowDatabase is at version {v} but no schemas/*/{v}.json is "
                         f"committed — build once to export it, then commit it")
@@ -234,6 +234,36 @@ for path in Path("feature").rglob("presentation/*.kt"):
         offenders.append(f"{path}: only *Route.kt belongs at the presentation root")
 if offenders:
     fail(CHECK, "one package per role — see the layout in feature/CLAUDE.md:\n      "
+                + "\n      ".join(offenders))
+else:
+    ok(CHECK)
+
+# -------------------------------------- 11. data-layer types stay internal
+# Room and Supabase implementation types must not be re-exported. Before
+# docs/adr/0009-module-ownership-boundaries.md, 33 of these were `public` while three
+# separate documents claimed they were not, and `feature:auth` could import AccountDao.
+# The module split makes `internal` real again; this keeps it that way.
+CHECK = "Room and DTO implementation types are internal"
+SEALED = {
+    "local_db/src/main/kotlin/com/finflow/core/database/entity": "Room entities",
+    "local_db/src/main/kotlin/com/finflow/core/database/dao": "DAOs",
+    "local_db/src/main/kotlin/com/finflow/core/database/model": "Room projection rows",
+    "network/src/main/kotlin/com/finflow/core/network/dto": "wire DTOs",
+}
+DECL = re.compile(r"^(?:@\w+\s+)*(data class|interface|abstract class|class|object|enum class)\s+(\w+)")
+offenders = []
+for directory, label in SEALED.items():
+    root = Path(directory)
+    if not root.exists():
+        fail(CHECK, f"{directory} does not exist — repoint this check")
+        continue
+    for path in sorted(root.glob("*.kt")):
+        for n, line in enumerate(path.read_text().split("\n"), 1):
+            m = DECL.match(line)
+            if m:
+                offenders.append(f"{path}:{n}: {label[:-1]} `{m.group(2)}` is not internal")
+if offenders:
+    fail(CHECK, "these must never be visible outside their own module:\n      "
                 + "\n      ".join(offenders))
 else:
     ok(CHECK)

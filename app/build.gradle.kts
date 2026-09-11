@@ -29,6 +29,11 @@ android {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":ui"))
+
+    // The composition root is the only place that sees the implementations: `:service` is
+    // here for its Hilt bindings, not because any app code calls into it.
+    implementation(project(":service"))
 
     // Every feature module must be listed here, including ones with no screen yet — a module
     // absent from this list contributes no navigation graph, so its route is unreachable.

@@ -1,14 +1,8 @@
 plugins {
-    alias(libs.plugins.finflow.android.library)
-}
-
-android {
-    namespace = "com.finflow.core.testing"
+    alias(libs.plugins.finflow.jvm.library)
 }
 
 dependencies {
-    // Android library rather than JVM: the domain models it builds live in `:core`, which is
-    // an Android module, and a JVM module cannot resolve an AAR onto its compile classpath.
     api(project(":core"))
 
     // `api`, not `implementation`: a module that depends on core:testing is a test source

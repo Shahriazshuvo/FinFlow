@@ -24,8 +24,14 @@ rootProject.name = "FinFlow"
 
 include(":app")
 
-include(":core")
-include(":core:testing")
+// Ownership boundaries, innermost first — see docs/adr/0009-module-ownership-boundaries.md.
+include(":core")          // pure JVM: model, common, domain
+include(":core:testing")  // pure JVM: fixtures, fixed clock, model builders
+
+include(":local_db")      // Room: entities, DAOs, local data sources
+include(":network")       // Supabase: client, DTOs, remote data sources
+include(":service")       // repository impls, sync engine, preferences
+include(":ui")            // Compose: design system, MVI base, route keys
 
 include(":feature:accounts")
 include(":feature:analytics")

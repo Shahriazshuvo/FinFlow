@@ -39,16 +39,18 @@ in `com/finflow/buildlogic/CatalogExtensions.kt`.
 `AndroidApplication`, `AndroidLibrary`, `AndroidLibraryCompose`, `AndroidFeature`, `AndroidHilt`,
 `AndroidRoom`, `JvmLibrary`, `JvmHilt`, `KotlinSerialization`.
 
-`AndroidFeatureConventionPlugin` wires `:core` into every feature module. It used to wire six
-separate core modules and omit four, and that omission was what made the layering rule a compile
-error — since `:core` became one module there is nothing left to omit. **The rule did not go
-away; its enforcement moved** to check 3 of `scripts/check-context.sh`, which fails on any
-`feature/**.kt` importing `com.finflow.core.{data,database,network,datastore,security,sync}`.
-The thing you are reaching for still belongs behind a use case. Background:
-`docs/adr/0008-single-core-module.md` and `docs/adr/0006-centralized-data-layer.md`.
+`AndroidFeatureConventionPlugin` is load-bearing architecture, not convenience: it wires exactly
+`:core` and `:ui` into every feature module and deliberately omits `:service`, `:local_db` and
+`:network`. That omission is what makes the layering rule a compile error — a feature cannot
+inject a repository implementation, touch a DAO or import a DTO. Do not add those to make
+something compile; the thing you are reaching for belongs behind a use case.
+
+Features do not need `:service` because repository implementations are bound by Hilt at the
+`:app` composition root. Background: `docs/adr/0009-module-ownership-boundaries.md` and
+`docs/adr/0006-centralized-data-layer.md`.
 
 No feature is ever wired to another feature, which is why feature-to-feature coupling cannot
-happen by accident. Route keys live in `core:navigation` for exactly this reason.
+happen by accident. Route keys live in `:ui` for exactly this reason.
 
 `core:testing` is added to every feature's **test** classpath here, so a feature test gets
 `MainDispatcherRule`, `TEST_CLOCK` and the model builders without declaring anything.
@@ -65,9 +67,8 @@ debug build type.
 
 Both `AndroidApplicationConventionPlugin` and `AndroidLibraryConventionPlugin` call
 `configureFlavors`. Every Android module must declare the dimension or variant resolution fails
-with "unable to find a matching variant". Every module in the project is now Android, so none is
-exempt — `JvmLibraryConventionPlugin` and `JvmHiltConventionPlugin` are unused since
-`docs/adr/0008-single-core-module.md`, kept only for a future pure-JVM module. They have no
+with "unable to find a matching variant"; `:core` and `:core:testing` are exempt because
+`JvmLibraryConventionPlugin` makes them pure JVM, so they have no
 Android variants. `configureFlavors` is **two typed overloads**, not one generic function, because
 AGP 9's `CommonExtension` is not generic and only the application flavor type has
 `applicationIdSuffix`.
@@ -75,7 +76,7 @@ AGP 9's `CommonExtension` is not generic and only the application flavor type ha
 Adding flavors renamed the variant-aware tasks. Use `:app:assembleDevDebug` and
 `testDevDebugUnitTest`; plain `assembleDebug` and `testDebugUnitTest` are now ambiguous.
 
-Supabase credentials are attached per flavor in `core/build.gradle.kts`, reading
+Supabase credentials are attached per flavor in `network/build.gradle.kts`, reading
 `SUPABASE_URL_<FLAVOR>` with a fallback to the unsuffixed key.
 
 Java toolchain 17, core-library desugaring on (mandatory — `minSdk` is 24 and `java.time` is
