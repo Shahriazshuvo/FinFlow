@@ -45,7 +45,7 @@ data class Dimens(
     val elevationHigh: Dp = 6.dp,
 
     // Component sizes
-    val buttonHeight: Dp = 48.dp,
+    val buttonHeight: Dp = 56.dp,
     val textFieldHeight: Dp = 56.dp,
     val listItemHeight: Dp = 64.dp,
     val topAppBarHeight: Dp = 64.dp,

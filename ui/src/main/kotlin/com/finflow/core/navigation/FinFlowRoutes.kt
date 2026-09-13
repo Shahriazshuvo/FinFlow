@@ -35,20 +35,27 @@ data object MainGraphRouteKey
 // --- Auth graph ---
 
 /**
- * Sign in and sign up, as one destination.
+ * Sign in. The auth graph's start destination, and the first thing a signed-out user sees.
  *
- * §6 draws them as two children of the auth graph; §13 draws them as one "Login/Signup
- * Screen". This follows §13, because `feature:auth` renders both from a single `AuthScreen`
- * with a mode flag and one ViewModel: the credential handling is shared, and two screens
- * would drift apart. Splitting the key without splitting the screen would also scope a
- * separate ViewModel to each destination, so toggling from sign-in to sign-up would silently
- * discard the email the user had already typed.
+ * This follows §6, which draws sign-in and sign-up as two children of the auth graph.
+ * It previously followed §13's single "Login/Signup Screen" with an `AuthState.Mode` flag —
+ * see `docs/adr/0011-split-login-and-signup.md` for why that was reversed.
  *
- * The graph shape §6 actually cares about — auth and main as siblings under the root, so the
- * back stack can be popped a graph at a time — is honoured by [AuthGraphRouteKey].
+ * The screens are split all the way down, not just at the key: each has its own ViewModel, so
+ * neither carries fields the other cannot use. The cost is that an email typed on one screen
+ * does not survive the trip to the other; that is acceptable here because the journey runs
+ * one way, from a user who has no account to the form that creates one. If it ever needs to
+ * survive, this key takes a `prefillEmail` rather than the screens re-merging.
  */
 @Serializable
-data object AuthRouteKey
+data object LoginRouteKey
+
+/**
+ * Sign up. Reached from [LoginRouteKey]'s footer link, and only from there — a signed-out
+ * cold start always lands on sign-in, so this is never a start destination.
+ */
+@Serializable
+data object SignUpRouteKey
 
 // --- Main graph: top-level destinations ---
 
@@ -108,8 +115,11 @@ fun NavController.navigateToAuthGraph(navOptions: NavOptions? = null) =
 fun NavController.navigateToMainGraph(navOptions: NavOptions? = null) =
     navigate(MainGraphRouteKey, navOptions)
 
-fun NavController.navigateToAuth(navOptions: NavOptions? = null) =
-    navigate(AuthRouteKey, navOptions)
+fun NavController.navigateToLogin(navOptions: NavOptions? = null) =
+    navigate(LoginRouteKey, navOptions)
+
+fun NavController.navigateToSignUp(navOptions: NavOptions? = null) =
+    navigate(SignUpRouteKey, navOptions)
 
 fun NavController.navigateToDashboard(navOptions: NavOptions? = null) =
     navigate(DashboardRouteKey, navOptions)

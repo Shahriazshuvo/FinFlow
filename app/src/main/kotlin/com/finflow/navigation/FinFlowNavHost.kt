@@ -7,13 +7,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.navOptions
 import androidx.navigation.navigation
 import com.finflow.core.navigation.AuthGraphRouteKey
-import com.finflow.core.navigation.AuthRouteKey
 import com.finflow.core.navigation.DashboardRouteKey
+import com.finflow.core.navigation.LoginRouteKey
 import com.finflow.core.navigation.MainGraphRouteKey
 import com.finflow.core.navigation.navigateToMainGraph
+import com.finflow.core.navigation.navigateToSignUp
 import com.finflow.feature.accounts.navigation.accountsScreen
 import com.finflow.feature.analytics.navigation.analyticsScreen
-import com.finflow.feature.auth.navigation.authScreen
+import com.finflow.feature.auth.navigation.authScreens
 import com.finflow.feature.budgets.navigation.budgetsScreen
 import com.finflow.feature.categories.navigation.categoriesScreen
 import com.finflow.feature.dashboard.navigation.dashboardScreen
@@ -44,8 +45,8 @@ fun FinFlowNavHost(
         startDestination = if (isAuthenticated) MainGraphRouteKey else AuthGraphRouteKey,
         modifier = modifier,
     ) {
-        navigation<AuthGraphRouteKey>(startDestination = AuthRouteKey) {
-            authScreen(
+        navigation<AuthGraphRouteKey>(startDestination = LoginRouteKey) {
+            authScreens(
                 onSignedIn = {
                     navController.navigateToMainGraph(
                         navOptions {
@@ -54,6 +55,15 @@ fun FinFlowNavHost(
                         },
                     )
                 },
+                onNavigateToSignUp = {
+                    navController.navigateToSignUp(
+                        navOptions { launchSingleTop = true },
+                    )
+                },
+                // Pops rather than navigates, so the footer link and the system back button
+                // leave the same single-entry stack behind instead of growing it each time
+                // the user bounces between the two forms.
+                onNavigateBackToLogin = { navController.popBackStack() },
                 onMessage = onMessage,
             )
         }

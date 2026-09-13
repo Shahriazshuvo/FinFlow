@@ -35,6 +35,8 @@ seen the reasoning.
 | `docs/adr/0007-analytics-aggregated-from-room.md` | Analytics are aggregated from Room, not read from the Supabase views |
 | `docs/adr/0008-single-core-module.md` | `core` is one module; layering is a script check — **reversed by 0009** |
 | `docs/adr/0009-module-ownership-boundaries.md` | Ownership split: `core`/`local_db`/`network`/`service`/`ui`; layering is a compile error again |
+| `docs/adr/0010-finmori-visual-identity.md` | Indigo replaces the green identity; two bundled font families |
+| `docs/adr/0011-split-login-and-signup.md` | Login and sign-up are two destinations, not one screen with a mode flag |
 
 New ADRs: copy `docs/adr/_template.md`, take the next number, never renumber an existing one.
 

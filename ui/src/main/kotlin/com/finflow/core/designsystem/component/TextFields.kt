@@ -93,6 +93,7 @@ fun FinFlowPasswordField(
     modifier: Modifier = Modifier,
     errorMessage: String? = null,
     enabled: Boolean = true,
+    leadingIcon: ImageVector? = null,
     imeAction: ImeAction = ImeAction.Done,
 ) {
     var isVisible by remember { mutableStateOf(false) }
@@ -103,6 +104,7 @@ fun FinFlowPasswordField(
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
         label = { Text(label) },
+        leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
         isError = errorMessage != null,
         supportingText = errorMessage?.let { { Text(it) } },
         singleLine = true,

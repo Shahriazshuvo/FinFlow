@@ -3,16 +3,16 @@ package com.finflow.feature.auth.presentation.viewmodel
 import app.cash.turbine.test
 import com.finflow.core.common.error.AppError
 import com.finflow.core.common.result.AppResult
+import com.finflow.core.common.validation.AuthValidator
 import com.finflow.core.domain.usecase.auth.ObserveSessionUseCase
 import com.finflow.core.domain.usecase.auth.SignInUseCase
-import com.finflow.core.domain.usecase.auth.SignUpUseCase
 import com.finflow.core.model.SessionState
 import com.finflow.core.model.UserSession
 import com.finflow.core.testing.MainDispatcherRule
-import com.finflow.feature.auth.presentation.contract.AuthEffect
-import com.finflow.feature.auth.presentation.contract.AuthIntent
-import com.finflow.feature.auth.presentation.contract.AuthState
+import com.finflow.feature.auth.presentation.contract.LoginEffect
+import com.finflow.feature.auth.presentation.contract.LoginIntent
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,12 +28,15 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * The MVI contract from APP_SPEC.md §7 as this screen implements it: intents reduce to
- * state, failures surface as a message rather than a crash, and "the user is authenticated"
- * is decided in exactly one place — the session flow.
+ * The MVI contract from APP_SPEC.md §7 as sign-in implements it: intents reduce to state,
+ * failures surface as a message rather than a crash, and "the user is authenticated" is
+ * decided in exactly one place — the session flow.
+ *
+ * [AuthValidator] is the real one, not a mock. It has no dependencies, and the point of these
+ * tests is that the screen puts the *real* rules under the right field.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class AuthViewModelTest {
+class LoginViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -43,14 +46,14 @@ class AuthViewModelTest {
 
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val signIn = mockk<SignInUseCase>()
-    private val signUp = mockk<SignUpUseCase>()
+    private val validator = AuthValidator()
 
     @Before
     fun setUp() {
         every { observeSession() } returns sessionState
     }
 
-    private fun viewModel() = AuthViewModel(observeSession, signIn, signUp)
+    private fun viewModel() = LoginViewModel(observeSession, signIn, validator)
 
     @Test
     fun `starts restoring until the session resolves`() = runTest(dispatcher) {
@@ -68,55 +71,51 @@ class AuthViewModelTest {
     fun `typing updates state and clears the previous error`() = runTest(dispatcher) {
         val viewModel = viewModel()
         sessionState.value = SessionState.SignedOut
-        coEvery { signIn(any(), any()) } returns
-            AppResult.Failure(AppError.Validation("Enter a valid email address"))
 
-        viewModel.onIntent(AuthIntent.EmailChanged("nope"))
-        viewModel.onIntent(AuthIntent.PasswordChanged("password123"))
-        viewModel.onIntent(AuthIntent.Submitted)
+        viewModel.onIntent(LoginIntent.EmailChanged("nope"))
+        viewModel.onIntent(LoginIntent.PasswordChanged("password123"))
+        viewModel.onIntent(LoginIntent.Submitted)
         runCurrent()
-        assertEquals("Enter a valid email address", viewModel.state.value.errorMessage)
+        assertEquals("Enter a valid email address", viewModel.state.value.emailError)
 
-        viewModel.onIntent(AuthIntent.EmailChanged("ada@finflow.app"))
+        viewModel.onIntent(LoginIntent.EmailChanged("ada@finflow.app"))
         runCurrent()
 
         assertEquals("ada@finflow.app", viewModel.state.value.email)
-        assertNull(viewModel.state.value.errorMessage)
+        assertNull(viewModel.state.value.emailError)
     }
 
     @Test
-    fun `toggling to sign up clears the sign-up-only fields`() = runTest(dispatcher) {
+    fun `a malformed email never reaches the use case`() = runTest(dispatcher) {
         val viewModel = viewModel()
+        sessionState.value = SessionState.SignedOut
 
-        viewModel.onIntent(AuthIntent.ModeToggled)
-        viewModel.onIntent(AuthIntent.DisplayNameChanged("Ada"))
-        viewModel.onIntent(AuthIntent.ConfirmPasswordChanged("password123"))
-        runCurrent()
-        assertTrue(viewModel.state.value.isSignUp)
-
-        viewModel.onIntent(AuthIntent.ModeToggled)
+        viewModel.onIntent(LoginIntent.EmailChanged("nope"))
+        viewModel.onIntent(LoginIntent.PasswordChanged("password123"))
+        viewModel.onIntent(LoginIntent.Submitted)
         runCurrent()
 
-        val state = viewModel.state.value
-        assertFalse(state.isSignUp)
-        assertEquals("", state.displayName)
-        assertEquals("", state.confirmPassword)
+        coVerify(exactly = 0) { signIn(any(), any()) }
+        assertFalse(viewModel.state.value.isSubmitting)
     }
 
     @Test
-    fun `a failed sign in surfaces a message and stops submitting`() = runTest(dispatcher) {
+    fun `a failed sign in surfaces a form error and stops submitting`() = runTest(dispatcher) {
         val viewModel = viewModel()
         sessionState.value = SessionState.SignedOut
         coEvery { signIn(any(), any()) } returns AppResult.Failure(AppError.Unauthorized)
 
-        viewModel.onIntent(AuthIntent.EmailChanged("ada@finflow.app"))
-        viewModel.onIntent(AuthIntent.PasswordChanged("password123"))
-        viewModel.onIntent(AuthIntent.Submitted)
+        viewModel.onIntent(LoginIntent.EmailChanged("ada@finflow.app"))
+        viewModel.onIntent(LoginIntent.PasswordChanged("password123"))
+        viewModel.onIntent(LoginIntent.Submitted)
         runCurrent()
 
         val state = viewModel.state.value
         assertFalse(state.isSubmitting)
-        assertEquals("That email and password do not match an account.", state.errorMessage)
+        assertEquals("That email and password do not match an account.", state.formError)
+        // Wrong credentials belong to the submission, not to either box.
+        assertNull(state.emailError)
+        assertNull(state.passwordError)
     }
 
     @Test
@@ -129,7 +128,20 @@ class AuthViewModelTest {
             )
             runCurrent()
 
-            assertEquals(AuthEffect.NavigateToHome, awaitItem())
+            assertEquals(LoginEffect.NavigateToHome, awaitItem())
+        }
+    }
+
+    @Test
+    fun `the footer link asks to navigate to sign up`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        sessionState.value = SessionState.SignedOut
+
+        viewModel.effect.test {
+            viewModel.onIntent(LoginIntent.SignUpClicked)
+            runCurrent()
+
+            assertEquals(LoginEffect.NavigateToSignUp, awaitItem())
         }
     }
 
@@ -138,10 +150,11 @@ class AuthViewModelTest {
         val viewModel = viewModel()
         sessionState.value = SessionState.SignedOut
 
-        viewModel.onIntent(AuthIntent.Submitted)
+        viewModel.onIntent(LoginIntent.Submitted)
         runCurrent()
 
         assertFalse(viewModel.state.value.isSubmitting)
-        assertNull(viewModel.state.value.errorMessage)
+        assertNull(viewModel.state.value.formError)
+        coVerify(exactly = 0) { signIn(any(), any()) }
     }
 }

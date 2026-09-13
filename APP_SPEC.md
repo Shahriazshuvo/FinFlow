@@ -196,10 +196,13 @@ Root
     └── Settings
 ```
 
-Two deliberate departures from the sketch above as it was first drawn: the auth graph holds a
-**single** Login/Signup destination, because §13 specifies one screen serving both modes and
-`AuthState.mode` switches between them; and **Categories** is a live destination, though it is
-not in the bottom bar.
+One deliberate departure from the sketch above as it was first drawn: **Categories** is a live
+destination, though it is not in the bottom bar.
+
+The auth graph holds **two** destinations, `LoginRouteKey` and `SignUpRouteKey`, with sign-in as
+the start destination and a footer link navigating to sign-up. It briefly held a single
+Login/Signup destination with an `AuthState.mode` flag; see
+`docs/adr/0011-split-login-and-signup.md` for why that was reversed.
 
 Navigation rules:
 
@@ -423,13 +426,15 @@ This is simple, understandable, and good enough for a portfolio-grade personal f
 Flow:
 
 ```text
-Login/Signup Screen
- → AuthViewModel
- → AuthUseCase
- → AuthRepository
+Login Screen  → LoginViewModel  → SignInUseCase ─┐
+                                                 ├→ AuthRepository
+Signup Screen → SignUpViewModel → SignUpUseCase ─┘
  → Supabase Auth
  → encrypted session storage
 ```
+
+Two screens, two ViewModels, one repository. Sign-up is reached only from sign-in's footer link,
+so a signed-out cold start always lands on sign-in.
 
 Signup must not create profile, account, or default categories manually. Supabase trigger does that.
 

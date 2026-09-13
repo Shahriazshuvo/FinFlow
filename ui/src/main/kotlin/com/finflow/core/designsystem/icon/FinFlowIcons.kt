@@ -20,6 +20,9 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Search
@@ -44,6 +47,9 @@ object FinFlowIcons {
     val Dashboard = Icons.Filled.Home
     val Empty = Icons.Filled.Inbox
     val Logout = Icons.AutoMirrored.Filled.Logout
+    val Email = Icons.Filled.MailOutline
+    val Password = Icons.Filled.Lock
+    val Person = Icons.Filled.Person
     val Analytics = Icons.Filled.PieChart
     val Budget = Icons.Filled.Savings
     val Search = Icons.Filled.Search

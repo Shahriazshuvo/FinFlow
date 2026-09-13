@@ -17,17 +17,34 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.finflow.core.designsystem.component.FinFlowBottomBar
 import com.finflow.core.designsystem.component.FinFlowBottomBarItem
+import com.finflow.core.designsystem.component.LoadingState
+import com.finflow.core.model.SessionState
 import com.finflow.core.navigation.DashboardRouteKey
 import com.finflow.navigation.FinFlowNavHost
 import com.finflow.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
 
+/**
+ * [sessionState] has no default on purpose. It used to be an `isAuthenticated: Boolean = true`,
+ * and because `MainActivity` called `FinFlowApp()` with no argument, the app always started on
+ * the main graph and the auth graph was unreachable. Requiring the caller to supply it means
+ * that particular silence cannot come back.
+ */
 @Composable
 fun FinFlowApp(
+    sessionState: SessionState,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    isAuthenticated: Boolean = true,
 ) {
+    // The graph is not composed until the stored session has been restored: `NavHost` reads
+    // `startDestination` once, so opening on the wrong half cannot be corrected afterwards
+    // without the user watching the app navigate away from a screen it should never have
+    // shown. A loader for one frame is the cheaper honest answer.
+    if (sessionState is SessionState.Unknown) {
+        LoadingState(modifier = modifier.fillMaxSize())
+        return
+    }
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
     val currentTopLevel = TopLevelDestination.entries
@@ -53,7 +70,7 @@ fun FinFlowApp(
     ) { innerPadding ->
         FinFlowNavHost(
             navController = navController,
-            isAuthenticated = isAuthenticated,
+            isAuthenticated = sessionState is SessionState.SignedIn,
             onMessage = { message ->
                 scope.launch { snackbarHostState.showSnackbar(message) }
             },

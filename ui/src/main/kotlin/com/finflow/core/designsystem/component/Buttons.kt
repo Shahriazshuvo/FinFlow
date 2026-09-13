@@ -2,9 +2,12 @@ package com.finflow.core.designsystem.component
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -19,6 +22,11 @@ import com.finflow.core.designsystem.theme.FinFlowTheme
 /**
  * The app's primary action button. It owns its busy state, so no screen has to hand-roll
  * "button plus spinner" or forget to disable the button while a request is in flight.
+ *
+ * The fill is `colors.emphasis` rather than `colorScheme.primary`: the reference designs use
+ * the solid navy for every committing action and reserve the brand blue for links and
+ * selection. Width is left to the caller — a form CTA fills its parent, the action inside an
+ * `EmptyState` does not.
  */
 @Composable
 fun FinFlowButton(
@@ -31,8 +39,13 @@ fun FinFlowButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.height(FinFlowTheme.dimens.buttonHeight),
         enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(FinFlowTheme.dimens.cornerLg),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = FinFlowTheme.colors.emphasis,
+            contentColor = FinFlowTheme.colors.onEmphasis,
+        ),
     ) {
         ButtonContent(text = text, isLoading = isLoading, leadingIcon = leadingIcon)
     }
@@ -49,8 +62,9 @@ fun FinFlowOutlinedButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.height(FinFlowTheme.dimens.buttonHeight),
         enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(FinFlowTheme.dimens.cornerLg),
     ) {
         ButtonContent(text = text, isLoading = isLoading, leadingIcon = leadingIcon)
     }
